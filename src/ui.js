@@ -3,6 +3,7 @@ import { SCHEMA, getPath } from './settings.js';
 import { stickToRate } from './rates.js';
 import { SCENES } from './scenes/index.js';
 import { buttonName, bindingName, axisName, hapticsSupport } from './controllers.js';
+import { estimateTopSpeed, tuneTopSpeed, thrustToWeight, hoverThrottle } from './flightPerf.js';
 
 const ACTION_NAMES = {
   arm: 'Armar / desarmar', reset: 'Resetar drone', camera: 'Trocar câmera', mode: 'Modo de voo', pause: 'Pausa / menu',
@@ -336,6 +337,44 @@ export class UI {
       });
       sec.appendChild(row);
     }
+  }
+
+  /** Velocidade máxima direta: o jogo ajusta o passo da hélice (e, se preciso, o arrasto). */
+  custom_speedControl(sec) {
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div class="row"><label class="lbl">Velocidade máxima <i class="help-i" title="Escolha a velocidade final e o jogo ajusta o passo da hélice (e, acima de certo ponto, o arrasto) para o drone chegar perto disso voando nivelado com throttle cheio e bateria cheia. Mergulhando ele passa disso; com a bateria acabando, fica abaixo.">?</i></label>
+        <div class="ctl"><input type="range" min="20" max="300" step="5"><span class="val"></span></div></div>
+      <p class="hint" data-perf></p>`;
+    const input = div.querySelector('input'), val = div.querySelector('.val'), info = div.querySelector('[data-perf]');
+    let dragging = false, sig = '';
+    const refresh = () => {
+      const d = this.settings.data.drone, w = { ...this.settings.data.world, batterySim: this.settings.data.battery.simulate };
+      const key = JSON.stringify([d, w.airDensity, w.gravity, w.batterySim]);
+      if (key === sig || dragging) return;
+      sig = key;
+      const v = estimateTopSpeed(d, w) * 3.6;
+      input.value = Math.round(v / 5) * 5;
+      val.textContent = `${Math.round(v)} km/h`;
+      const hov = hoverThrottle(d, w.gravity, this.settings.data.fc.motorIdle);
+      info.textContent = `Empuxo/peso ${thrustToWeight(d, w.gravity).toFixed(1)}:1 · paira com ${hov == null ? '— (não decola!)' : Math.round(hov * 100) + '% de throttle'} · passo da hélice ${Math.round(d.propPitchSpeed)} m/s`;
+    };
+    input.addEventListener('input', () => { dragging = true; val.textContent = `${input.value} km/h`; });
+    input.addEventListener('change', () => {
+      dragging = false;
+      const d = this.settings.data.drone, w = { ...this.settings.data.world, batterySim: this.settings.data.battery.simulate };
+      const r = tuneTopSpeed(d, w, Number(input.value) / 3.6);
+      if (r.dragMul < 1) {
+        for (const k of ['cdaFront', 'cdaTop', 'cdaSide', 'rotorDrag']) this.settings.set('drone.' + k, d[k] * r.dragMul, { silent: true });
+      }
+      this.settings.set('drone.propPitchSpeed', Math.round(r.pitchSpeed * 10) / 10);
+      if (!r.reached) this.toast(`Para passar de ${Math.round(estimateTopSpeed(this.settings.data.drone, w) * 3.6)} km/h, aumente a Potência`, 4000);
+      sig = '';
+      this.renderSettings();
+    });
+    this.live.push(refresh);
+    refresh();
+    sec.appendChild(div);
   }
 
   custom_hapticsTest(sec) {

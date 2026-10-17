@@ -590,14 +590,18 @@ export class Kit {
   }
 
   /** Superfície de água (mar, lago, rio) com ondulação animada. Sem colisão: o fundo é o terreno. */
-  water({ x = 0, z = 0, w, d, y = 0, color = '#1d5866', opacity = 0.86, speed = 1, ripple = 8 }) {
-    const geo = new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2);
+  water({ x = 0, z = 0, w, d, y = 0, color = '#1d5866', opacity = 0.86, speed = 1, ripple = 8, radius = 0 }) {
+    if (radius) { w = d = radius * 2; }
+    const geo = (radius ? new THREE.CircleGeometry(radius, 48) : new THREE.PlaneGeometry(w, d)).rotateX(-Math.PI / 2);
     let nrm = geoCache.get('ripple');
     if (!nrm) { nrm = rippleNormalTexture(3); geoCache.set('ripple', nrm); }
     const tex = nrm.clone();
     tex.needsUpdate = true;
     tex.repeat.set(w / ripple, d / ripple);
-    const params = { color: new THREE.Color(color), transparent: opacity < 1, opacity, normalMap: tex, normalScale: new THREE.Vector2(0.55, 0.55) };
+    // polygonOffset: onde a margem fica quase na altura da água, a água vence o empate de
+    // profundidade (sem o "piscar" de z-fighting na linha d'água vista de longe)
+    const params = { color: new THREE.Color(color), transparent: opacity < 1, opacity, normalMap: tex, normalScale: new THREE.Vector2(0.55, 0.55),
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 };
     let mat;
     if (this.settings.get('graphics.pbr')) mat = new THREE.MeshStandardMaterial({ ...params, roughness: 0.1, metalness: 0.05 });
     else {
@@ -607,8 +611,8 @@ export class Kit {
       mat.onBeforeCompile = shader => {
         shader.uniforms.uSky = { value: sky };
         shader.fragmentShader = 'uniform vec3 uSky;\n' + shader.fragmentShader.replace('#include <opaque_fragment>', `
-  float fres = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 4.0);
-  outgoingLight = mix(outgoingLight, uSky, clamp(fres * 0.9, 0.0, 0.85));
+  float fres = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 5.0);
+  outgoingLight = mix(outgoingLight, uSky, clamp(fres * 0.75, 0.0, 0.55));
   #include <opaque_fragment>`);
       };
       mat.customProgramCacheKey = () => 'water-fresnel';

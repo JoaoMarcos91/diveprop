@@ -6,6 +6,7 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { stickToRate, throttleCurve } from './rates.js';
+import { thrustMax } from './flightPerf.js';
 
 const DEG = Math.PI / 180;
 // Quad X. spin +1 = anti-horário visto de cima.
@@ -321,6 +322,7 @@ export class Drone {
     const ge = this.settings.data.world.groundEffect
       ? 1 / (1 - Math.min(0.25, Math.pow(p.propRadius / (4 * Math.max(this.groundDist, p.propRadius * 0.5)), 2)))
       : 1;
+    const Tmax = thrustMax(p); // empuxo máximo por motor já com o multiplicador de potência
     const lever = p.armLength * Math.SQRT1_2;
     let total = 0;
     const torque = new THREE.Vector3();
@@ -329,7 +331,7 @@ export class Drone {
       const s = this.motor[i];
       const pitchSpeed = Math.max(p.propPitchSpeed * s, 0.5);
       const inflow = THREE.MathUtils.clamp(1 - vAxial / pitchSpeed, 0, 1.2);
-      let F = p.maxThrust * s * s * inflow * battFactor * ge * (1 - 0.25 * wash);
+      let F = Tmax * s * s * inflow * battFactor * ge * (1 - 0.25 * wash);
       if (turtle) F = -F * 0.6;
       this.thrusts[i] = F;
       total += F;
@@ -344,7 +346,7 @@ export class Drone {
       this.washNoise.x += ((Math.random() - 0.5) * 2 - this.washNoise.x) * k;
       this.washNoise.y += ((Math.random() - 0.5) * 2 - this.washNoise.y) * k;
       this.washNoise.z += ((Math.random() - 0.5) * 2 - this.washNoise.z) * k;
-      const amp = wash * p.maxThrust * lever * 0.18;
+      const amp = wash * Tmax * lever * 0.18;
       torque.x += this.washNoise.x * amp;
       torque.z += this.washNoise.z * amp;
       torque.y += this.washNoise.y * amp * 0.3;
@@ -404,8 +406,8 @@ export class Drone {
   }
 
   avgMotor() { return (this.motor[0] + this.motor[1] + this.motor[2] + this.motor[3]) * 0.25; }
-  torqueGainRP() { const p = this.p; return 4 * p.armLength * Math.SQRT1_2 * p.maxThrust / ((p.inertiaPitch + p.inertiaRoll) * 0.5); }
-  torqueGainYaw() { const p = this.p; return 4 * p.yawTorqueRatio * p.maxThrust / p.inertiaYaw; }
+  torqueGainRP() { const p = this.p; return 4 * p.armLength * Math.SQRT1_2 * thrustMax(p) / ((p.inertiaPitch + p.inertiaRoll) * 0.5); }
+  torqueGainYaw() { const p = this.p; return 4 * p.yawTorqueRatio * thrustMax(p) / p.inertiaYaw; }
   speed() { const v = this.body.linvel(); return Math.hypot(v.x, v.y, v.z); }
   isFlying() { return this.speed() > 1.0 || this.avgMotor() > 0.3; }
 

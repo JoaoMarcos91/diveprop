@@ -5,18 +5,20 @@ import { V, smooth, scatter } from './common.js';
 import { buildRaceTrack } from './raceTrack.js';
 
 // x, z, altura da base, largura interna, altura interna, cor
+// portões grandes (3,3 × 3 m): mais fáceis de passar em alta velocidade
+const PAD = 0.32;
 const GATES = [
-  [0, 20, 0, 2.2, 2.0, 'gateOrange'],     // largada/chegada
-  [0, -25, 0, 2.2, 2.0, 'gateBlue'],
-  [30, -60, 0, 2.2, 2.0, 'gateOrange'],
-  [70, -45, 3.5, 2.4, 2.2, 'gateBlue'],   // portão elevado
-  [85, 0, 0, 2.2, 2.0, 'gateOrange'],
-  [60, 40, 0, 2.2, 2.0, 'gateBlue'],
-  [60, 40, 2.4, 2.2, 2.0, 'gateOrange', { noSupport: true, yawFrom: 5 }],  // "escada" (acima do anterior)
-  [20, 70, 7, 2.6, 2.4, 'gateBlue'],      // dive gate na torre
-  [-35, 60, 0, 2.2, 2.0, 'gateOrange'],
-  [-70, 15, 0, 2.2, 2.0, 'gateBlue'],
-  [-45, -30, 0, 2.2, 2.0, 'gateOrange'],
+  [0, 20, 0, 3.3, 3.0, 'gateOrange'],     // largada/chegada
+  [0, -25, 0, 3.3, 3.0, 'gateBlue'],
+  [30, -60, 0, 3.3, 3.0, 'gateOrange'],
+  [70, -45, 4, 3.6, 3.3, 'gateBlue'],     // portão elevado
+  [85, 0, 0, 3.3, 3.0, 'gateOrange'],
+  [60, 40, 0, 3.3, 3.0, 'gateBlue'],
+  [60, 40, 3.0 + PAD * 2 + 0.05, 3.3, 3.0, 'gateOrange', { noSupport: true, yawFrom: 5 }],  // "escada" (em cima do anterior)
+  [20, 70, 8, 3.9, 3.6, 'gateBlue'],      // dive gate na torre
+  [-35, 60, 0, 3.3, 3.0, 'gateOrange'],
+  [-70, 15, 0, 3.3, 3.0, 'gateBlue'],
+  [-45, -30, 0, 3.3, 3.0, 'gateOrange'],
 ];
 // a "escada" (índice 6) é decorativa: não entra na sequência
 const SEQ = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10];
@@ -38,7 +40,7 @@ export function buildRace(kit, settings) {
 
   const track = buildRaceTrack(kit, settings, {
     gates: GATES.map(([x, z, base, w, h, mat, extra]) => ({ x, z, base, w, h, mat, ...extra })),
-    seq: SEQ, key: 'race', groundAt: H,
+    seq: SEQ, key: 'race', groundAt: H, pad: PAD,
   });
   const gates = track.gates;
 
@@ -56,8 +58,8 @@ export function buildRace(kit, settings) {
   const flags = [[45, -70], [95, -25], [90, 30], [35, 65], [-10, 80], [-60, 50], [-80, -10], [-25, -50], [15, -40]];
   for (const [x, z] of flags) {
     const gy = H(x, z);
-    kit.cyl('paintWhite', x, gy + 2, z, 0.04, 0.05, 4, { seg: 6 });
-    kit.box(R() < 0.5 ? 'gateOrange' : 'gateBlue', x + 0.35, gy + 3.2, z, 0.7, 1.4, 0.03, { collide: false });
+    kit.cyl('paintWhite', x, gy + 2.75, z, 0.06, 0.07, 5.5, { seg: 6 });
+    kit.box(R() < 0.5 ? 'gateOrange' : 'gateBlue', x + 0.55, gy + 4.4, z, 1.1, 2.1, 0.04, { collide: false });
   }
   // tendas e arquibancada
   for (const [x, z, c] of [[-20, 32, 'gateBlue'], [-12, 34, 'gateOrange']]) {
@@ -79,7 +81,7 @@ export function buildRace(kit, settings) {
     kit.grass(scatter(R, Math.round(5500 * veg), -110, -100, 110, 100, (x, z) => gates.every(g => Math.hypot(x - g.x, z - g.z) > 2.5)).map(p => ({ ...p, s: 0.7 + R() * 0.6 })));
   }
 
-  const start = track.startPoint(12);
+  const start = track.startPoint(14);
   kit.box('concrete', start.pos.x, start.pos.y - 0.2, start.pos.z, 2.4, 0.12, 2.4);
   return {
     spawn: start,

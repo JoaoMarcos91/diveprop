@@ -8,15 +8,15 @@ const HX = 24, HZ = 15, WALL_H = 12;
 
 // x, z, altura da base, largura, altura, cor
 const GATES = [
-  [0, 7, 0, 0.9, 0.9, 'gateOrange'],       // largada
-  [-13, 6.5, 0, 0.9, 0.9, 'gateBlue'],
-  [-20, -0.5, 0.6, 0.9, 0.9, 'gateOrange'],
-  [-13, -9, 0, 0.9, 0.9, 'gateBlue'],
-  [0, -11, 1.8, 1.0, 1.0, 'gateOrange'],   // portão alto
-  [13, -9, 0, 0.9, 0.9, 'gateBlue'],
-  [20, -0.5, 0.9, 0.9, 0.9, 'gateOrange'],
-  [13, 6.5, 0, 0.9, 0.9, 'gateBlue'],
-  [5, 12.9, 2.75, 1.0, 1.0, 'gateOrange'], // em cima da arquibancada
+  [0, 7, 0, 1.4, 1.4, 'gateOrange'],       // largada
+  [-13, 6.5, 0, 1.4, 1.4, 'gateBlue'],
+  [-20, -0.5, 0.6, 1.4, 1.4, 'gateOrange'],
+  [-13, -9, 0, 1.4, 1.4, 'gateBlue'],
+  [0, -11, 1.8, 1.5, 1.5, 'gateOrange'],   // portão alto
+  [13, -9, 0, 1.4, 1.4, 'gateBlue'],
+  [20, -0.5, 0.9, 1.4, 1.4, 'gateOrange'],
+  [13, 6.5, 0, 1.4, 1.4, 'gateBlue'],
+  [5, 12.9, 2.75, 1.5, 1.5, 'gateOrange'], // em cima da arquibancada
 ];
 const SEQ = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
@@ -109,15 +109,15 @@ export function buildGym(kit, settings) {
   // ---------------------------------------------------------------- pista de whoop
   const track = buildRaceTrack(kit, settings, {
     gates: GATES.map(([x, z, base, w, h, mat]) => ({ x, z, base, w, h, mat })),
-    seq: SEQ, key: 'gym', groundAt: floor, pad: 0.06, supportMat: 'steel', deck: 'padBlue',
+    seq: SEQ, key: 'gym', groundAt: floor, pad: 0.09, supportMat: 'steel', deck: 'padBlue',
   });
   // bandeiras nas curvas
   for (const [x, z] of [[-19, 6], [-19, -7], [19, -7], [19, 6], [-6, -12.5], [8, -12]]) {
-    kit.cyl('paintWhite', x, 0.9, z, 0.012, 0.015, 1.8, { seg: 5, collide: false });
-    kit.box(R() < 0.5 ? 'gateOrange' : 'gateBlue', x + 0.12, 1.45, z, 0.24, 0.6, 0.01, { collide: false });
+    kit.cyl('paintWhite', x, 1.2, z, 0.018, 0.022, 2.4, { seg: 5, collide: false });
+    kit.box(R() < 0.5 ? 'gateOrange' : 'gateBlue', x + 0.18, 1.95, z, 0.36, 0.9, 0.012, { collide: false });
   }
 
-  const start = track.startPoint(2.5, 0.08);
+  const start = track.startPoint(3, 0.08);
   kit.box('padBlue', start.pos.x, 0.01, start.pos.z, 0.6, 0.02, 0.6, { collide: false });
   return {
     spawn: start,

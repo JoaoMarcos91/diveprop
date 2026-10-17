@@ -130,7 +130,7 @@ class Game {
 
     this.ui.loading(def.name, 0.35, 'Construindo o cenário');
     await new Promise(r => setTimeout(r, 20));
-    const kit = this.kit = new Kit({ scene, world: this.world, lib: this.lib, settings: this.settings, seed: def.seed || 7, skyColor: sky.fogColor.clone().multiplyScalar(1.1) });
+    const kit = this.kit = new Kit({ scene, world: this.world, lib: this.lib, settings: this.settings, seed: def.seed || 7, skyColor: sky.fogColor.clone().lerp(sky.skyColor, 0.5).multiplyScalar(0.85) });
     const info = this.info = def.build(kit, this.settings, THREE) || {};
     kit.flush();
     this.ui.loading(def.name, 0.55, `Texturas (${kit.colliderCount} colisores)`);

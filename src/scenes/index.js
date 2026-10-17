@@ -15,6 +15,6 @@ export const SCENES = [
   { id: 'race', name: 'Pista de Corrida', desc: 'Circuito com 10 portões (um elevado e um dive gate), cronômetro de volta e melhor volta salva.', tag: 'Corrida · cronometrado', sky: 'cloudy', seed: 53, build: buildRace },
   { id: 'beach', name: 'Praia', desc: 'Enseada com mar, coqueiros, píer de madeira para voar entre os pilares, farol num rochedo e barcos ancorados.', tag: 'Freestyle · litoral', sky: 'noon', seed: 61, build: buildBeach },
   { id: 'valley', name: 'Vale nas Montanhas', desc: 'Rio entre montanhas, cachoeira de 34 m caindo num lago, ponte alta para passar por baixo e floresta de pinheiros.', tag: 'Mountain surfing · natureza', sky: 'ridge', seed: 71, build: buildValley },
-  { id: 'quarry', name: 'Pedreira', desc: 'Cava em bancadas com lago no fundo, britador elevado, esteiras de 200 m, silos, caminhões e escavadeira.', tag: 'Bando · industrial', sky: 'quarry', seed: 83, build: buildQuarry },
+  { id: 'quarry', name: 'Pedreira', desc: 'Cava em bancadas com lago no fundo, duas torres de resfriamento ocas de 90 m (entre por baixo e saia pelo topo), britador e esteiras.', tag: 'Bando · industrial', sky: 'quarry', seed: 83, build: buildQuarry },
   { id: 'gym', name: 'Ginásio Indoor', desc: 'Quadra coberta com pista de tiny whoop cronometrada, arquibancada, cordas e cestas de basquete — passe pelo aro!', tag: 'Whoop · indoor', sky: 'gym', seed: 97, indoor: true, fog: false, suggestDrone: 'whoop', suggestLabel: 'Tiny Whoop', build: buildGym },
 ];

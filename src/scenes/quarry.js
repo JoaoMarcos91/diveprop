@@ -9,6 +9,7 @@ const BENCH = 18;      // largura de cada degrau (face + piso)
 const DROP = 9;        // altura de cada degrau
 const LEVELS = 5;
 const PLANT = { x: 205, z: 20 };
+const TOWERS = [[-250, -80, 95], [-238, 62, 88]]; // x, z, altura
 
 export function buildQuarry(kit, settings) {
   const veg = settings.get('graphics.vegetation');
@@ -138,6 +139,11 @@ export function buildQuarry(kit, settings) {
     kit.rock('boulder', p.x, H(p.x, p.z) + s * 0.25, p.z, s * 1.3, s * 0.9, s, { rough: 0.18 });
   }
 
+  // ---------------------------------------------------------------- torres de resfriamento
+  // perfil hiperbólico de usina, mas mais esbeltas; ocas, abertas em cima e com vão entre os
+  // pilares da base: dá para entrar voando por baixo e sair pelo topo
+  for (const [x, z, h] of TOWERS) coolingTower(kit, x, z, { height: h });
+
   // ---------------------------------------------------------------- postes e vegetação ao redor
   for (let a = 0; a < Math.PI * 2; a += Math.PI / 10) {
     const x = Math.cos(a) * 200, z = Math.sin(a) * 175, g = H(x, z);
@@ -145,7 +151,7 @@ export function buildQuarry(kit, settings) {
     kit.box('lampOn', x - Math.cos(a) * 0.8, g + 9.6, z - Math.sin(a) * 0.8, 0.6, 0.3, 0.6, { collide: false });
   }
   const trees = [];
-  for (const p of scatter(R, Math.round(240 * veg), -370, -370, 370, 370, (x, z) => Math.hypot(x, z * 1.15) > pitR(x, z) + 35 && Math.hypot(x - P.x, z - P.z - 30) > 90)) {
+  for (const p of scatter(R, Math.round(240 * veg), -370, -370, 370, 370, (x, z) => Math.hypot(x, z * 1.15) > pitR(x, z) + 35 && Math.hypot(x - P.x, z - P.z - 30) > 90 && TOWERS.every(([tx, tz]) => Math.hypot(x - tx, z - tz) > 42))) {
     trees.push({ ...p, s: 0.8 + R() * 0.7, type: R() < 0.55 ? 'pine' : R() < 0.7 ? 'oak' : 'bush' });
   }
   kit.trees(trees);
@@ -161,4 +167,62 @@ export function buildQuarry(kit, settings) {
     pilot: V(sx + 3, 0, sz - 3),
     orbit: 120,
   };
+}
+
+/**
+ * Torre de resfriamento oca: casca de concreto (externa + interna), borda no topo, base sobre
+ * pilares em V com vãos de ~3,5 m, plinto de concreto e um tanque d'água no fundo.
+ */
+function coolingTower(kit, cx, cz, { height = 95, rBase = 26, rThroat = 14, t = 0.6, lift = 9 } = {}) {
+  const H = height, y0 = 0.72 * H;
+  const c = y0 / Math.sqrt((rBase / rThroat) ** 2 - 1);
+  const rAt = y => rThroat * Math.sqrt(1 + ((y - y0) / c) ** 2);
+  // chão sob a torre: plinto nivelado na altura mais alta do terreno
+  let gMin = Infinity, gMax = -Infinity;
+  for (let a = 0; a < 16; a++) for (const rr of [0, rBase * 0.5, rBase + 2]) {
+    const g = kit.heightAt(cx + Math.cos(a / 16 * Math.PI * 2) * rr, cz + Math.sin(a / 16 * Math.PI * 2) * rr);
+    gMin = Math.min(gMin, g); gMax = Math.max(gMax, g);
+  }
+  const base = gMax + 0.4;
+  kit.cyl('concrete', cx, (base + gMin - 1) / 2, cz, rBase + 3, rBase + 3.5, base - gMin + 1, { seg: 32 });
+  // tanque d'água no fundo
+  kit.cyl('concrete', cx, base + 0.6, cz, rBase - 1.5, rBase - 1.5, 1.2, { seg: 48, open: true, collide: false });
+  kit.water({ x: cx, z: cz, y: base + 0.9, radius: rBase - 1.6, color: '#4a6f6a', opacity: 0.93, ripple: 6, speed: 0.4 });
+
+  // casca: perfil de baixo para cima (normais para fora) e o inverso por dentro
+  const N = 26, seg = 56, yb = base + lift;
+  const outer = [], inner = [];
+  for (let i = 0; i <= N; i++) { const y = H * i / N; outer.push(new THREE.Vector2(rAt(y), y)); }
+  for (let i = N; i >= 0; i--) { const y = H * i / N; inner.push(new THREE.Vector2(rAt(y) - t, y)); }
+  const k = 1 / kit.lib.tile('concreteForm');
+  const m = new THREE.Matrix4().makeTranslation(cx, yb, cz);
+  for (const pts of [outer, inner]) {
+    const g = new THREE.LatheGeometry(pts, seg);
+    const uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * Math.PI * 2 * rBase * 0.8 * k, uv.getY(i) * H * k);
+    kit.addGeometry('concreteForm', g, m);
+    kit.collider({ type: 'tris', geometry: g }, cx, yb, cz, null);
+  }
+  // bordas de cima e de baixo
+  const top = new THREE.RingGeometry(rAt(H) - t, rAt(H) + 0.05, seg).rotateX(-Math.PI / 2).translate(0, H, 0);
+  const bot = new THREE.RingGeometry(rAt(0) - t, rAt(0) + 0.05, seg).rotateX(Math.PI / 2);
+  for (const g of [top, bot]) { kit.addGeometry('concrete', g, m); kit.collider({ type: 'tris', geometry: g }, cx, yb, cz, null); }
+  // pilares em V
+  const nCol = 40;
+  for (let i = 0; i < nCol; i++) {
+    const a = i / nCol * Math.PI * 2, da = (i % 2 ? 1 : -1) * (Math.PI / nCol);
+    const foot = V(cx + Math.cos(a) * (rBase + 0.4), base, cz + Math.sin(a) * (rBase + 0.4));
+    const head = V(cx + Math.cos(a + da) * (rBase - 0.3), yb + 0.2, cz + Math.sin(a + da) * (rBase - 0.3));
+    kit.beam('concreteForm', foot, head, 0.28, { square: true });
+  }
+  // luzes de sinalização no topo e uma escada de serviço por fora
+  for (let i = 0; i < 4; i++) {
+    const a = i / 4 * Math.PI * 2 + 0.4;
+    kit.box('lampRed', cx + Math.cos(a) * (rAt(H) + 0.15), yb + H + 0.25, cz + Math.sin(a) * (rAt(H) + 0.15), 0.5, 0.5, 0.5, { collide: false });
+  }
+  for (let i = 0; i < 18; i++) {
+    const y = H * (i + 0.5) / 18, a = 2.2;
+    const r = rAt(y) + 0.35;
+    kit.box('steelRust', cx + Math.cos(a) * r, yb + y, cz + Math.sin(a) * r, 0.08, H / 18 - 0.3, 0.9, { ry: -a, collide: false });
+  }
 }

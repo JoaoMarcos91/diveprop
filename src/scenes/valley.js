@@ -10,7 +10,6 @@ const LAKE = { x: -260, r: 75 };
 const CLIFF_X = -335;           // penhasco da cachoeira (planalto a oeste)
 const PLATEAU = 34;
 const BRIDGE_X = 140;
-const POOL_X = CLIFF_X - 26;
 
 function ridged(x, z) {
   let s = 0, a = 0.5, f = 1;
@@ -29,7 +28,7 @@ export function buildValley(kit, settings) {
     const mount = ridged(x / 260, z / 260) * 230 + fbm(x / 60, z / 60, 3, 4) * 8;
     let floor = 2.2 + fbm(x / 80, z / 80, 3, 11) * 0.8;
     // leito do rio (fundo e com margens bem definidas, sem "listras" na linha d'água)
-    floor = THREE.MathUtils.lerp(-3.2, floor, smooth(13, 22, d));
+    floor = THREE.MathUtils.lerp(-3.2, floor, smooth(14, 19, d));
     // lago
     const ld = Math.hypot(x - LAKE.x, (z - rz0) * 0.9);
     floor = Math.min(floor, THREE.MathUtils.lerp(-4, floor, smooth(LAKE.r * 0.7, LAKE.r * 1.05, ld)));
@@ -37,13 +36,8 @@ export function buildValley(kit, settings) {
     // planalto do penhasco, a oeste do lago (degrau íngreme e irregular)
     const cx = CLIFF_X + fbm(z / 30, 3.3, 2, 17) * 10 * smooth(4, 20, Math.abs(z - rz0));
     const cliff = smooth(cx + 6, cx - 6, x);
-    h = Math.max(h, cliff * (PLATEAU + fbm(x / 40, z / 40, 2, 5) * 2));
-    // poço no alto e o canal que leva a água até a beira do penhasco
-    if (x < CLIFF_X) {
-      const pd = Math.hypot(x - POOL_X, z - rz0);
-      h = Math.min(h, THREE.MathUtils.lerp(PLATEAU - 3, h, smooth(9, 15, pd)));
-      if (x > POOL_X && x < CLIFF_X - 3) h = Math.min(h, THREE.MathUtils.lerp(PLATEAU - 2.6, h, smooth(3.5, 6, Math.abs(z - rz0))));
-    }
+    // planalto sempre ≥ PLATEAU: a água do poço (PLATEAU − 1,4) nunca fica rente ao chão
+    h = Math.max(h, cliff * (PLATEAU + Math.abs(fbm(x / 40, z / 40, 2, 5)) * 2));
     return h;
   };
   const splat = (x, z) => {
@@ -57,10 +51,6 @@ export function buildValley(kit, settings) {
 
   // ---------------------------------------------------------------- água: rio + lago, e o poço no planalto
   kit.water({ w: 1400, d: 1400, y: 0, color: '#2b6c73', opacity: 0.96, ripple: 7, speed: 1.6 });
-  {
-    const x0 = POOL_X - 16, x1 = CLIFF_X - 4;
-    kit.water({ x: (x0 + x1) / 2, z: rz0, w: x1 - x0, d: 32, y: PLATEAU - 1.4, color: '#2b6c73', opacity: 0.9, ripple: 6, speed: 2.5 });
-  }
 
   // ---------------------------------------------------------------- cachoeira
   {
@@ -69,7 +59,7 @@ export function buildValley(kit, settings) {
     tex.repeat.set(2, 3);
     const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0.9, depthWrite: false, side: THREE.DoubleSide, color: 0xffffff });
     // a cortina d'água desce da beira do penhasco até o lago, um pouco à frente da rocha
-    const top = V(CLIFF_X - 4, PLATEAU - 1.4, rz0), bot = V(CLIFF_X + 7, 0.2, rz0);
+    const top = V(CLIFF_X - 5, PLATEAU - 0.5, rz0), bot = V(CLIFF_X + 10, 0.2, rz0);
     const len = top.distanceTo(bot);
     const geo = new THREE.PlaneGeometry(6, len).rotateY(Math.PI / 2).rotateZ(Math.atan2(-(top.x - bot.x), top.y - bot.y));
     const curtain = new THREE.Mesh(geo, mat);
@@ -95,6 +85,13 @@ export function buildValley(kit, settings) {
       tex.offset.y += dt * 1.4;
       mists.forEach((m, i) => { m.rotation.y += dt * (0.1 + i * 0.03); m.scale.setScalar(1 + 0.12 * Math.sin(t * 1.3 + i)); });
     });
+    // pedras na borda do penhasco, de onde a água sai
+    for (let i = 0; i < 7; i++) {
+      const s = 1.2 + R() * 2;
+      const z = rz0 + (i - 3) * 1.6 + (R() - 0.5);
+      if (Math.abs(z - rz0) < 2.5) continue;
+      kit.rock('rockGray', CLIFF_X - 6 - R() * 3, PLATEAU + s * 0.2, z, s * 1.3, s, s * 1.2);
+    }
     for (let i = 0; i < 10; i++) {
       const s = 1.5 + R() * 3;
       kit.rock('rockGray', CLIFF_X + 9 + R() * 10, s * 0.2, rz0 + (R() - 0.5) * 22, s * 1.4, s, s * 1.2);

@@ -83,7 +83,7 @@ export const PROFILE_KEYS = ['layout', 'throttle', 'yaw', 'pitch', 'roll', 'thro
 const d5 = DRONE_PRESETS.freestyle5;
 
 export const DEFAULTS = {
-  drone: { preset: 'freestyle5', ...stripLabel(d5) },
+  drone: { preset: 'freestyle5', power: 1, ...stripLabel(d5) },
   battery: { simulate: true, resetOnRespawn: true },
   world: {
     gravity: 9.81, airDensity: 1.225, windSpeed: 1.5, windDir: 45, gustStrength: 0.35,
@@ -190,6 +190,10 @@ export const SCHEMA = [
     ] },
   ] },
   { tab: 'Física', id: 'physics', groups: [
+    { title: 'Potência e velocidade', fields: [
+      { path: 'drone.power', label: 'Potência', type: 'range', min: 0.3, max: 3, step: 0.05, unit: '%', scale: 100, help: 'Multiplica a força dos motores. 100% = o drone do preset; 200% = o dobro de empuxo (mais aceleração e subida).' },
+    ] },
+    { title: '', custom: 'speedControl' },
     { title: 'Drone', fields: [
       { path: 'drone.preset', label: 'Preset de drone', type: 'select', options: Object.fromEntries(Object.entries(DRONE_PRESETS).map(([k, v]) => [k, v.label])), help: 'Carrega todos os parâmetros abaixo. Depois você pode ajustar cada um.' },
       { path: 'drone.mass', label: 'Massa (com bateria)', type: 'range', min: 0.02, max: 2, step: 0.005, unit: 'kg' },
@@ -197,7 +201,7 @@ export const SCHEMA = [
       { path: 'drone.armLength', label: 'Distância centro→motor', type: 'range', min: 0.02, max: 0.3, step: 0.002, unit: 'm' },
       { path: 'drone.motorTauUp', label: 'Tempo de resposta do motor (subida)', type: 'range', min: 0.005, max: 0.15, step: 0.001, unit: 's' },
       { path: 'drone.motorTauDown', label: 'Tempo de resposta do motor (descida)', type: 'range', min: 0.005, max: 0.2, step: 0.001, unit: 's' },
-      { path: 'drone.propPitchSpeed', label: 'Velocidade de passo da hélice', type: 'range', min: 5, max: 120, step: 1, unit: 'm/s', help: 'Empuxo cai conforme o ar entra rápido na hélice: limita a velocidade máxima.' },
+      { path: 'drone.propPitchSpeed', label: 'Velocidade de passo da hélice', type: 'range', min: 3, max: 200, step: 0.5, unit: 'm/s', help: 'Empuxo cai conforme o ar entra rápido na hélice: limita a velocidade máxima.' },
       { path: 'drone.yawTorqueRatio', label: 'Torque de yaw / empuxo', type: 'range', min: 0.002, max: 0.05, step: 0.001, unit: 'm' },
       { path: 'drone.propRadius', label: 'Raio da hélice', type: 'range', min: 0.01, max: 0.12, step: 0.001, unit: 'm' },
       { path: 'drone.size', label: 'Tamanho da colisão (meia largura)', type: 'range', min: 0.02, max: 0.25, step: 0.005, unit: 'm' },
@@ -356,7 +360,7 @@ export class Settings {
     const prevLayout = this.data.input?.layout;
     setPath(this.data, path, value);
     // Efeitos colaterais de presets
-    if (path === 'drone.preset' && DRONE_PRESETS[value]) Object.assign(this.data.drone, stripLabel(DRONE_PRESETS[value]), { preset: value });
+    if (path === 'drone.preset' && DRONE_PRESETS[value]) Object.assign(this.data.drone, stripLabel(DRONE_PRESETS[value]), { preset: value, power: 1 });
     if (path === 'graphics.preset' && GRAPHICS_PRESETS[value]) Object.assign(this.data.graphics, stripLabel(GRAPHICS_PRESETS[value]), { preset: value });
     if (path === 'input.layout' && CONTROL_LAYOUTS[value]) {
       const L = CONTROL_LAYOUTS[value];

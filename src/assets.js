@@ -72,6 +72,7 @@ export const MATERIALS = {
   courtBlue:      { color: '#2c5f9e', roughness: 0.55 },
   padBlue:        { color: '#1f4f8f', roughness: 0.8 },
   lampOn:         { color: '#fffaf0', emissive: '#fff6e0', roughness: 0.4 },
+  lampRed:        { color: '#ff4a3a', emissive: '#ff2414', roughness: 0.4 },
   windowGlow:     { color: '#dfeefa', emissive: '#b8d4ea', roughness: 0.3 },
   steelBlue:      { color: '#2e4d6b', roughness: 0.5, metalness: 0.6 },
   belt:           { color: '#222222', roughness: 0.95 },

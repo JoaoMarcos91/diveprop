@@ -80,12 +80,16 @@ Ajuste ou teste em **Configurações → Controle → Vibração**. Rádios FPV 
 |---|---|
 | ![Fábrica](docs/factory.jpg) **Fábrica Abandonada** — galpão de tijolos com janelas quebradas e telhado furado, treliças, mezanino, contêineres e tanques. | ![Chaminé](docs/chimney.jpg) **A chaminé** — 50 m de altura, oca: entre por cima, mergulhe por dentro e saia pela porta na base. |
 | ![Dentro da chaminé](docs/chimney-dive.jpg) **Mergulho na chaminé** | ![Prédio](docs/tower.jpg) **Prédio Inacabado** — esqueleto de 12 andares, andaime, guindaste de 56 m e estacionamento. |
-| ![Pista](docs/race.jpg) **Pista de Corrida** — 10 portões, cronômetro e melhor volta salva. | ![Campos](docs/fields.jpg) **Campos e Árvores** — fazenda, celeiro vazado, floresta, fios de alta tensão e lago. |
+| ![Pista](docs/race.jpg) **Pista de Corrida** — 10 portões grandes (3,3 × 3 m), cronômetro e melhor volta salva. | ![Campos](docs/fields.jpg) **Campos e Árvores** — fazenda, celeiro vazado, floresta, fios de alta tensão e lago. |
 | ![Praia](docs/beach.jpg) **Praia** — enseada com mar, coqueiros, píer de madeira (voe entre os pilares), farol num rochedo e barcos. | ![Vale](docs/valley.jpg) **Vale nas Montanhas** — rio entre montanhas, cachoeira caindo num lago, ponte alta e floresta de pinheiros. |
-| ![Pedreira](docs/quarry.jpg) **Pedreira** — cava em bancadas com lago no fundo, britador, esteiras de 200 m, silos e caminhões. | ![Ginásio](docs/gym.jpg) **Ginásio Indoor** — pista de tiny whoop cronometrada, arquibancada, cordas e cestas de basquete (passe pelo aro!). |
+| ![Pedreira](docs/quarry.jpg) **Pedreira** — cava em bancadas com lago no fundo, duas torres de resfriamento ocas de ~90 m (entre por baixo, entre os pilares, e saia pelo topo), britador, esteiras e caminhões. | ![Ginásio](docs/gym.jpg) **Ginásio Indoor** — pista de tiny whoop cronometrada, arquibancada, cordas e cestas de basquete (passe pelo aro!). |
 
 ## O que dá para configurar
 
+- **Potência e velocidade máxima** (aba Física): "Potência" multiplica a força dos motores
+  (mostra a relação empuxo/peso e o throttle de hover); "Velocidade máxima" você escolhe em
+  km/h e o jogo ajusta o passo da hélice — e, acima de certo ponto, o arrasto — para o drone
+  chegar perto disso (estimativa considera a queda de tensão da bateria).
 - **Rates**: fórmulas Betaflight (RC rate, super rate, expo) e Actual, por eixo, com
   gráfico; curva de throttle (mid/expo/limite).
 - **Física**: 5 presets (Tiny Whoop, Cinewhoop 3", Freestyle 5", Racer 5", Long Range 7")
