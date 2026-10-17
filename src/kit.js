@@ -2,7 +2,8 @@
 // calls), colisores do Rapier, terreno com mistura de texturas, árvores e grama instanciadas.
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { leafClusterTexture, pineTexture, grassTuftTexture } from './procTex.js';
+import { mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import { leafClusterTexture, pineTexture, grassTuftTexture, palmFrondTexture, rippleNormalTexture } from './procTex.js';
 
 export function rng(seed) {
   let s = seed >>> 0 || 1;
@@ -38,8 +39,12 @@ const _nm = new THREE.Matrix3();
 
 const geoCache = new Map();
 
+/** Ponto do eixo do tronco do coqueiro em t ∈ [0,1] (altura 8 m, inclina até 1,6 m em +X). */
+function palmTop(t) { return new THREE.Vector3(1.6 * t * t, 8 * t, 0); }
+
 export class Kit {
-  constructor({ scene, world, lib, settings, seed = 1 }) {
+  constructor({ scene, world, lib, settings, seed = 1, skyColor = null }) {
+    this.skyColor = skyColor || new THREE.Color(0.55, 0.65, 0.75);
     this.scene = scene;
     this.world = world;
     this.lib = lib;
@@ -381,6 +386,37 @@ export class Kit {
         tiers.push(c);
       }
       canopy = merge(tiers);
+    } else if (type === 'palm') {
+      // coqueiro: tronco curvo (inclina para +X) e folhas caídas em volta da copa
+      const top = palmTop(1);
+      const segs = [];
+      for (let i = 0; i < 8; i++) {
+        const a = palmTop(i / 8), b = palmTop((i + 1) / 8);
+        const dir = new THREE.Vector3().subVectors(b, a);
+        const len = dir.length();
+        const c = new THREE.CylinderGeometry(0.2 - i * 0.008 - 0.008, 0.2 - i * 0.008, len * 1.04, 7, 1, true);
+        scaleUV(c, 1.3, len / 1.2);
+        c.applyMatrix4(new THREE.Matrix4().compose(a.clone().add(b).multiplyScalar(0.5), new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.normalize()), new THREE.Vector3(1, 1, 1)));
+        segs.push(c);
+      }
+      trunk = merge(segs);
+      const fronds = [];
+      for (let k = 0; k < 11; k++) {
+        const f = new THREE.PlaneGeometry(1.1, 3.8, 1, 6);
+        f.translate(0, 1.9, 0);
+        f.rotateX(-Math.PI / 2); // comprimento ao longo de -Z
+        const pa = f.attributes.position, na = f.attributes.normal;
+        const lift = 0.35 + r() * 0.35;
+        for (let i = 0; i < pa.count; i++) {
+          const d = -pa.getZ(i);
+          pa.setY(i, d * lift - 0.11 * d * d);
+          na.setXYZ(i, 0, 1, 0);
+        }
+        f.rotateY((k / 11) * Math.PI * 2 + r() * 0.4);
+        f.translate(top.x, top.y, top.z);
+        fronds.push(f);
+      }
+      canopy = merge(fronds);
     } else { // bush
       trunk = null;
       canopy = cards(12, new THREE.Vector3(0, 0.75, 0), new THREE.Vector3(1.1, 0.7, 1.1), 1.5);
@@ -393,7 +429,7 @@ export class Kit {
   foliageMaterial(type) {
     const id = 'foliage-' + type;
     if (this.materials.has(id)) return this.materials.get(id);
-    const tex = type === 'pine' ? pineTexture(5) : leafClusterTexture(type === 'bush' ? 21 : 7, type === 'bush' ? 0.25 : 0.27);
+    const tex = type === 'pine' ? pineTexture(5) : type === 'palm' ? palmFrondTexture(13) : leafClusterTexture(type === 'bush' ? 21 : 7, type === 'bush' ? 0.25 : 0.27);
     if (type === 'pine') tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     const pbr = this.settings.get('graphics.pbr');
     const params = { map: tex, alphaTest: 0.5, side: THREE.DoubleSide, color: 0xffffff };
@@ -405,7 +441,7 @@ export class Kit {
   /**
    * Árvores instanciadas por pedaços (culling por distância). list: [{x,z,s,type,y?}]
    */
-  trees(list, { chunk = 128, collide = true } = {}) {
+  trees(list, { chunk = 128, collide = true, maxDist = Infinity } = {}) {
     const shadows = this.settings.get('graphics.shadows') > 0;
     const byType = new Map();
     for (const t of list) {
@@ -414,16 +450,25 @@ export class Kit {
     }
     for (const [type, items] of byType) {
       const geos = this.treeGeometries(type);
-      const barkKey = type === 'pine' ? 'barkPine' : 'barkBroad';
+      const barkKey = type === 'pine' ? 'barkPine' : type === 'palm' ? 'palmBark' : 'barkBroad';
       const cells = new Map();
       for (const t of items) {
         const key = Math.floor(t.x / chunk) + ',' + Math.floor(t.z / chunk);
         if (!cells.has(key)) cells.set(key, []);
         cells.get(key).push(t);
         if (t.y == null) t.y = this.heightAt(t.x, t.z) - 0.15;
+        if (t.rot == null) t.rot = this.rand() * Math.PI * 2;
         if (collide) {
           const s = t.s;
-          if (type === 'oak') {
+          if (type === 'palm') {
+            // tronco inclinado: um cilindro do pé até a copa, girado como a instância
+            const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), t.rot);
+            const top = palmTop(1).multiplyScalar(s).applyQuaternion(q);
+            const dir = top.clone().normalize();
+            const qc = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+            this.collider({ type: 'cylinder', hh: top.length() / 2, r: 0.22 * s, seg: 6 }, t.x + top.x / 2, t.y + top.y / 2, t.z + top.z / 2, qc);
+            this.collider({ type: 'ball', r: 1.4 * s }, t.x + top.x, t.y + top.y + 0.2 * s, t.z + top.z);
+          } else if (type === 'oak') {
             this.collider({ type: 'cylinder', hh: 2.3 * s, r: 0.28 * s, seg: 6 }, t.x, t.y + 2.3 * s, t.z);
             this.collider({ type: 'ball', r: 1.9 * s }, t.x, t.y + 5.5 * s, t.z);
           } else if (type === 'pine') {
@@ -443,7 +488,7 @@ export class Kit {
         for (const [geo, mat, tinted] of parts) {
           const im = new THREE.InstancedMesh(geo, mat, arr.length);
           arr.forEach((t, i) => {
-            _e.set(0, t.rot ?? this.rand() * Math.PI * 2, 0);
+            _e.set(0, t.rot, 0);
             _q.setFromEuler(_e);
             const sy = t.s * (t.sy ?? 1);
             _m.compose(_p.set(t.x, t.y, t.z), _q, _s.set(t.s, sy, t.s));
@@ -460,7 +505,7 @@ export class Kit {
           this.scene.add(im);
           this.meshes.push(im);
           const bs = im.boundingSphere;
-          this.chunks.push({ mesh: im, center: bs.center.clone(), radius: bs.radius, maxDist: Infinity });
+          this.chunks.push({ mesh: im, center: bs.center.clone(), radius: bs.radius, maxDist, cast: im.castShadow });
         }
       }
     }
@@ -516,11 +561,79 @@ export class Kit {
     }
   }
 
+  /**
+   * Rocha: icosaedro deformado por ruído, com tamanho (sx,sy,sz). A própria malha vira colisão.
+   */
+  rock(key, x, y, z, sx, sy, sz, o = {}) {
+    const { rx = 0, ry = this.rand() * Math.PI * 2, rz = 0, detail = 1, rough = 0.42, collide = true } = o;
+    let g = new THREE.IcosahedronGeometry(1, detail);
+    g.deleteAttribute('uv');
+    g.deleteAttribute('normal');
+    g = mergeVertices(g);
+    const pos = g.attributes.position;
+    const sd = this.rand() * 100;
+    for (let i = 0; i < pos.count; i++) {
+      const vx = pos.getX(i), vy = pos.getY(i), vz = pos.getZ(i);
+      const n = noise2(vx * 1.6 + sd, vy * 1.6 + vz * 1.1) * 0.55 + noise2(vz * 3.1 + sd, vx * 3.1 - vy) * 0.3 + noise2(vx * 6 - sd, vz * 6 + vy) * 0.15;
+      const k = 1 + rough * n;
+      pos.setXYZ(i, vx * k * sx / 2, Math.max(vy * k, -0.6) * sy / 2, vz * k * sz / 2);
+    }
+    g.computeVertexNormals();
+    const t = 1 / this.lib.tile(key);
+    const uv = new Float32Array(pos.count * 2);
+    for (let i = 0; i < pos.count; i++) { uv[i * 2] = (pos.getX(i) + pos.getZ(i) * 0.7) * t; uv[i * 2 + 1] = (pos.getY(i) + pos.getZ(i) * 0.3) * t; }
+    g.setAttribute('uv', new THREE.BufferAttribute(uv, 2));
+    _e.set(rx, ry, rz, 'YXZ');
+    const q = new THREE.Quaternion().setFromEuler(_e);
+    this.addGeometry(key, g, new THREE.Matrix4().compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(1, 1, 1)));
+    if (collide) this.collider({ type: 'tris', geometry: g }, x, y, z, q);
+  }
+
+  /** Superfície de água (mar, lago, rio) com ondulação animada. Sem colisão: o fundo é o terreno. */
+  water({ x = 0, z = 0, w, d, y = 0, color = '#1d5866', opacity = 0.86, speed = 1, ripple = 8 }) {
+    const geo = new THREE.PlaneGeometry(w, d).rotateX(-Math.PI / 2);
+    let nrm = geoCache.get('ripple');
+    if (!nrm) { nrm = rippleNormalTexture(3); geoCache.set('ripple', nrm); }
+    const tex = nrm.clone();
+    tex.needsUpdate = true;
+    tex.repeat.set(w / ripple, d / ripple);
+    const params = { color: new THREE.Color(color), transparent: opacity < 1, opacity, normalMap: tex, normalScale: new THREE.Vector2(0.55, 0.55) };
+    let mat;
+    if (this.settings.get('graphics.pbr')) mat = new THREE.MeshStandardMaterial({ ...params, roughness: 0.1, metalness: 0.05 });
+    else {
+      // sem mapa de ambiente: reflexo do céu aproximado por Fresnel (água clareia em ângulo raso)
+      mat = new THREE.MeshPhongMaterial({ ...params, shininess: 90, specular: new THREE.Color(0x667788) });
+      const sky = this.skyColor.clone();
+      mat.onBeforeCompile = shader => {
+        shader.uniforms.uSky = { value: sky };
+        shader.fragmentShader = 'uniform vec3 uSky;\n' + shader.fragmentShader.replace('#include <opaque_fragment>', `
+  float fres = pow(1.0 - clamp(dot(normalize(normal), normalize(vViewPosition)), 0.0, 1.0), 4.0);
+  outgoingLight = mix(outgoingLight, uSky, clamp(fres * 0.9, 0.0, 0.85));
+  #include <opaque_fragment>`);
+      };
+      mat.customProgramCacheKey = () => 'water-fresnel';
+    }
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.set(x, y, z);
+    mesh.receiveShadow = false; // superfície plana: receber sombra gera listras ("shadow acne")
+    this.scene.add(mesh);
+    this.meshes.push(mesh);
+    this.materials.set('__water' + this.materials.size, mat);
+    this.updaters.push(dt => { tex.offset.x += dt * 0.018 * speed; tex.offset.y += dt * 0.011 * speed; });
+    return mesh;
+  }
+
+  /** Animações do cenário (água, cachoeira…), chamado a cada frame. */
+  update(dt) { for (const fn of this.updaters) fn(dt); }
+
   /** Esconde pedaços de vegetação além da distância de visão. */
   cull(camPos, viewDist) {
     for (const c of this.chunks) {
       const d = c.center.distanceTo(camPos) - c.radius;
       c.mesh.visible = d < Math.min(viewDist, c.maxDist);
+      // só pedaços perto da câmera projetam sombra: o mapa de sombras cobre poucas dezenas
+      // de metros, e desenhar uma floresta inteira nele custava metade do FPS
+      if (c.cast) c.mesh.castShadow = d < 50;
     }
   }
 

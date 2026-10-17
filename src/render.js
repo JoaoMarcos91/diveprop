@@ -65,7 +65,9 @@ export class Renderer {
   constructor(canvas, settings) {
     this.settings = settings;
     const g = settings.data.graphics;
-    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !!g.msaa, powerPreference: 'high-performance', stencil: false });
+    // stencil: true força um buffer de profundidade de 24 bits; sem ele alguns Safari/GPUs usam
+    // 16 bits, e água sobre fundo raso "briga" com o terreno (listras de z-fighting)
+    this.renderer = new THREE.WebGLRenderer({ canvas, antialias: !!g.msaa, powerPreference: 'high-performance', stencil: true });
     const r = this.renderer;
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.toneMapping = THREE.ACESFilmicToneMapping;
@@ -144,7 +146,7 @@ export class Renderer {
     u.signal.value = fx.signal;
     u.strength.value = fx.strength;
     u.time.value = fx.time;
-    u.vignette.value = fx.mode === 0 ? 0.15 : 0.4;
+    u.vignette.value = fx.vignette ?? (fx.mode === 0 ? 0.15 : 0.4);
     r.render(this.fxScene, this.fxCam);
   }
 

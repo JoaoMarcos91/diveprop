@@ -28,6 +28,16 @@ export const TEXTURES = {
   wood: 'rough_wood',
   plaster: 'grey_plaster_02',
   plasterDamaged: 'damaged_plaster',
+  sand: 'damp_beach_sand',
+  sandCoarse: 'coast_sand_01',
+  rock: 'rock_face',
+  rockyGround: 'rocky_terrain_02',
+  quarry: 'quarry_wall_02',
+  boulder: 'rock_boulder_dry',
+  mudDry: 'brown_mud_dry',
+  parquet: 'rectangular_parquet',
+  paintedBrick: 'painted_brick',
+  palmBark: 'palm_bark',
 };
 
 export const HDRIS = {
@@ -35,6 +45,10 @@ export const HDRIS = {
   overcast: 'kloofendal_overcast_puresky',
   sunset: 'belfast_sunset_puresky',
   cloudy: 'kloofendal_38d_partly_cloudy_puresky',
+  noon: 'qwantani_noon_puresky',
+  ridge: 'rocky_ridge_puresky',
+  quarry: 'drackenstein_quarry_puresky',
+  gym: 'crossfit_gym',
 };
 
 const MAPS = { diff: 'Diffuse', nor: 'nor_gl', arm: 'arm' };

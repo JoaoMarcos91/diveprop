@@ -113,6 +113,66 @@
       "diff": "tex/plasterDamaged/diff.jpg",
       "nor": "tex/plasterDamaged/nor.jpg",
       "arm": "tex/plasterDamaged/arm.jpg"
+    },
+    "sand": {
+      "id": "damp_beach_sand",
+      "diff": "tex/sand/diff.jpg",
+      "nor": "tex/sand/nor.jpg",
+      "arm": "tex/sand/arm.jpg"
+    },
+    "sandCoarse": {
+      "id": "coast_sand_01",
+      "diff": "tex/sandCoarse/diff.jpg",
+      "nor": "tex/sandCoarse/nor.jpg",
+      "arm": "tex/sandCoarse/arm.jpg"
+    },
+    "rock": {
+      "id": "rock_face",
+      "diff": "tex/rock/diff.jpg",
+      "nor": "tex/rock/nor.jpg",
+      "arm": "tex/rock/arm.jpg"
+    },
+    "rockyGround": {
+      "id": "rocky_terrain_02",
+      "diff": "tex/rockyGround/diff.jpg",
+      "nor": "tex/rockyGround/nor.jpg",
+      "arm": "tex/rockyGround/arm.jpg"
+    },
+    "quarry": {
+      "id": "quarry_wall_02",
+      "diff": "tex/quarry/diff.jpg",
+      "nor": "tex/quarry/nor.jpg",
+      "arm": "tex/quarry/arm.jpg"
+    },
+    "boulder": {
+      "id": "rock_boulder_dry",
+      "diff": "tex/boulder/diff.jpg",
+      "nor": "tex/boulder/nor.jpg",
+      "arm": "tex/boulder/arm.jpg"
+    },
+    "mudDry": {
+      "id": "brown_mud_dry",
+      "diff": "tex/mudDry/diff.jpg",
+      "nor": "tex/mudDry/nor.jpg",
+      "arm": "tex/mudDry/arm.jpg"
+    },
+    "parquet": {
+      "id": "rectangular_parquet",
+      "diff": "tex/parquet/diff.jpg",
+      "nor": "tex/parquet/nor.jpg",
+      "arm": "tex/parquet/arm.jpg"
+    },
+    "paintedBrick": {
+      "id": "painted_brick",
+      "diff": "tex/paintedBrick/diff.jpg",
+      "nor": "tex/paintedBrick/nor.jpg",
+      "arm": "tex/paintedBrick/arm.jpg"
+    },
+    "palmBark": {
+      "id": "palm_bark",
+      "diff": "tex/palmBark/diff.jpg",
+      "nor": "tex/palmBark/nor.jpg",
+      "arm": "tex/palmBark/arm.jpg"
     }
   },
   "hdris": {
@@ -131,6 +191,22 @@
     "cloudy": {
       "id": "kloofendal_38d_partly_cloudy_puresky",
       "file": "hdri/cloudy.hdr"
+    },
+    "noon": {
+      "id": "qwantani_noon_puresky",
+      "file": "hdri/noon.hdr"
+    },
+    "ridge": {
+      "id": "rocky_ridge_puresky",
+      "file": "hdri/ridge.hdr"
+    },
+    "quarry": {
+      "id": "drackenstein_quarry_puresky",
+      "file": "hdri/quarry.hdr"
+    },
+    "gym": {
+      "id": "crossfit_gym",
+      "file": "hdri/gym.hdr"
     }
   },
   "license": "CC0 — Poly Haven (polyhaven.com)"

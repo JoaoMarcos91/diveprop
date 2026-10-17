@@ -2,7 +2,8 @@
 // para o servidor do Vite e recebe comandos. Usado para verificar o jogo num navegador real.
 import * as THREE from 'three';
 
-const post = (body) => fetch('/__devreport', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
+const PAGE = Math.random().toString(36).slice(2, 7); // identifica a aba nos relatórios
+const post = (body) => fetch('/__devreport', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ page: PAGE, ...body }) }).catch(() => {});
 
 export function startDev(game) {
   const log = (type, data) => post({ type, t: Date.now(), ...data });
@@ -35,7 +36,7 @@ export function startDev(game) {
 
   async function run(cmd) {
     switch (cmd.action) {
-      case 'load': await game.startScene(cmd.scene); break;
+      case 'load': { const t0 = performance.now(); await game.startScene(cmd.scene); log('loaded', { scene: cmd.scene, ms: Math.round(performance.now() - t0), colliders: game.kit.colliderCount, colTris: game.kit.colTris, meshes: game.kit.meshes.length }); break; }
       case 'menu': game.toMainMenu(); break;
       case 'resume': if (game.state !== 'flying') game.resume(); break;
       case 'set': game.settings.set(cmd.path, cmd.value); break;
@@ -89,6 +90,8 @@ export function startDev(game) {
           for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
           log('shot', { name: cmd.name || 'shot', data: 'data:image/bmp;base64,' + btoa(bin), stats: stats() });
         };
+        // aba oculta não tem requestAnimationFrame: desenha um quadro na hora
+        if (document.hidden) { game.frame(performance.now()); }
         break;
       case 'stats': log('stats', stats()); break;
       case 'mockpad': {
@@ -162,7 +165,7 @@ export function startDev(game) {
           if (cmd.target === 'batches' && !m.isInstancedMesh && !isTerrain) m.visible = on;
           if (cmd.target === 'instanced' && m.isInstancedMesh) { m.visible = on; m.userData.forceHide = !on; }
         }
-        if (cmd.target === 'instanced') game.kit.chunks.forEach(c => { c.maxDist = on ? (c.origMax ?? c.maxDist) : -1e9; });
+        if (cmd.target === 'instanced') game.kit.chunks.forEach(c => { if (c.origMax === undefined) c.origMax = c.maxDist; c.maxDist = on ? c.origMax : -1e9; });
         break;
       }
       case 'bench': {
@@ -194,11 +197,11 @@ export function startDev(game) {
 
   let busy = false;
   setInterval(async () => {
-    if (busy || document.hidden) return; // abas em segundo plano não roubam comandos
+    if (busy || document.hidden) return; // só a aba visível recebe comandos
     busy = true;
     try {
       const cmds = await (await fetch('/__devcmd')).json();
-      for (const c of cmds) { try { await run(c); } catch (e) { log('error', { msg: 'cmd ' + c.action + ': ' + (e.stack || e) }); } }
+      for (const c of cmds) { log('got', { action: c.action, name: c.name }); try { await run(c); } catch (e) { log('error', { msg: 'cmd ' + c.action + ': ' + (e.stack || e) }); } }
     } catch { /* servidor fora */ }
     busy = false;
   }, 500);

@@ -106,18 +106,31 @@ class Game {
       this.sun.shadow.mapSize.set(g.shadows, g.shadows);
       const ext = g.shadows >= 4096 ? 70 : g.shadows >= 2048 ? 55 : 40;
       Object.assign(this.sun.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext, near: 1, far: 600 });
-      this.sun.shadow.bias = -0.0004;
-      this.sun.shadow.normalBias = 0.04;
+      // sol baixo (fim de tarde) gera "shadow acne" em superfícies planas: bias maior
+      const low = 1 - Math.min(1, this.sunDir.y / 0.5);
+      this.sun.shadow.bias = -0.0004 - 0.0008 * low;
+      this.sun.shadow.normalBias = 0.05 + 0.1 * low;
       this.sun.shadow.camera.updateProjectionMatrix();
     }
     // neblina: cor linear (quando renderiza no render target do efeito FPV) e cor de tela (direto)
+    if (def.indoor) {
+      // cenário fechado: fundo neutro, luz das luminárias vindo de cima, ambiente forte
+      scene.background = new THREE.Color(def.bg || '#1b1f24');
+      scene.backgroundIntensity = 1;
+      this.sunDir.set(0.22, 1, 0.12).normalize();
+      this.sun.color.set('#fff3e0');
+      this.sun.intensity = def.sunIntensity ?? 1.6;
+      this.hemi.color.set('#d8d2c8');
+      this.hemi.groundColor.set('#8a6a48');
+      this.hemi.intensity = g.pbr ? Math.PI * 0.35 : Math.PI * (def.ambient ?? 0.9);
+    }
     this.fogLinear = sky.fogColor.clone();
     this.fogDisplay = displayColor(sky.fogColor, 1);
     scene.fog = new THREE.Fog(this.fogDisplay.clone(), 50, 400);
 
     this.ui.loading(def.name, 0.35, 'Construindo o cenário');
     await new Promise(r => setTimeout(r, 20));
-    const kit = this.kit = new Kit({ scene, world: this.world, lib: this.lib, settings: this.settings, seed: def.seed || 7 });
+    const kit = this.kit = new Kit({ scene, world: this.world, lib: this.lib, settings: this.settings, seed: def.seed || 7, skyColor: sky.fogColor.clone().multiplyScalar(1.1) });
     const info = this.info = def.build(kit, this.settings, THREE) || {};
     kit.flush();
     this.ui.loading(def.name, 0.55, `Texturas (${kit.colliderCount} colisores)`);
@@ -150,6 +163,8 @@ class Game {
     this.state = 'flying';
     this.osd.flash(`${this.sceneDef.name}`, 2.5, '#ffe27a');
     this.osd.flash(`${this.actionLabel('arm', 'Espaço')} para armar`, 2.5);
+    const sug = this.sceneDef.suggestDrone;
+    if (sug && this.settings.get('drone.preset') !== sug) this.ui.toast(`Dica: este cenário foi feito para o ${this.sceneDef.suggestLabel} (Configurações → Física → Preset de drone)`, 6000);
   }
 
   async reloadScene() {
@@ -252,6 +267,7 @@ class Game {
   updateFog() {
     const g = this.settings.data.graphics;
     const f = this.scene.fog;
+    if (this.sceneDef?.fog === false) { f.near = 1e5; f.far = 2e5; return; }
     f.near = g.fog ? g.viewDistance * 0.3 : 1e5;
     f.far = g.fog ? g.viewDistance * 1.15 : 2e5;
   }
@@ -325,6 +341,7 @@ class Game {
       this.rig.update(dt, drone, this.model, this.kit.heightAt, this.pilotPos, this.r.aspect);
     }
     animateDroneModel(this.model, drone.motor, dt);
+    this.kit.update(dt);
     this.kit.cull(this.camera.position, this.settings.data.graphics.viewDistance);
     this.updateSun();
     this.audio.update(drone, this.state !== 'flying');
@@ -336,11 +353,13 @@ class Game {
     const fxMode = { off: 0, analog: 1, digital: 2 }[cam.fx];
     const tr = performance.now();
     this.r.renderer.info.reset();
-    const fxOn = fpv && (cam.fisheye > 0.01 || fxMode > 0);
-    this.scene.fog.color.copy(fxOn ? this.fogLinear : this.fogDisplay);
-    this.r.render(this.scene, this.camera, fxOn ? {
-      active: true, fisheye: cam.fisheye, mode: fxMode, signal: this.signal, strength: cam.fxStrength, time: this.time,
-    } : null);
+    // Sempre renderiza num render target (profundidade de 24 bits garantida) e depois aplica o
+    // pós-processamento; fora da câmera FPV o passe é só uma cópia com tone mapping. Direto na
+    // tela, alguns Safari usam profundidade de 16 bits e a água "briga" com o fundo raso.
+    this.scene.fog.color.copy(this.fogLinear);
+    this.r.render(this.scene, this.camera, fpv
+      ? { active: true, fisheye: cam.fisheye, mode: fxMode, signal: this.signal, strength: cam.fxStrength, time: this.time, vignette: fxMode === 0 ? 0.15 : 0.4 }
+      : { active: true, fisheye: 0, mode: 0, signal: 1, strength: 0, time: this.time, vignette: 0 });
     this.stats.renderMs = performance.now() - tr;
     if (this.shotRequest) { const fn = this.shotRequest; this.shotRequest = null; fn(this.r.dom); }
 

@@ -46,7 +46,7 @@ export class CameraRig {
       }
       const h = Math.min(c.fov, 175) * DEG;
       vfov = 2 * Math.atan(Math.tan(h / 2) / aspect) / DEG;
-      cam.near = 0.02;
+      cam.near = 0.04;
     } else if (c.mode === 'chase') {
       model.visible = true;
       _fw.set(0, 0, -1).applyQuaternion(q);

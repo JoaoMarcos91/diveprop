@@ -51,6 +51,30 @@ export const MATERIALS = {
   carWhite:       { color: '#d8d8d8', roughness: 0.35, metalness: 0.4 },
   carBlue:        { color: '#1d3a6b', roughness: 0.35, metalness: 0.5 },
   water:          { color: '#2a3d40', roughness: 0.05, metalness: 0.2 },
+  sand:           { tex: 'sand', tile: 4, mul: '#fff1d8', bright: 1.45, fallback: '#d8c49a' },
+  rockGray:       { tex: 'boulder', tile: 3, mul: '#a29d95', fallback: '#77736c' },
+  sandCoarse:     { tex: 'sandCoarse', tile: 4, fallback: '#a89070' },
+  rock:           { tex: 'rock', tile: 4, fallback: '#7a7268' },
+  rockyGround:    { tex: 'rockyGround', tile: 5, fallback: '#5d5a44' },
+  quarry:         { tex: 'quarry', tile: 5, fallback: '#8a7c68' },
+  boulder:        { tex: 'boulder', tile: 2.5, fallback: '#b8b2a6' },
+  mudDry:         { tex: 'mudDry', tile: 4, fallback: '#8a6e50' },
+  parquet:        { tex: 'parquet', tile: 3, fallback: '#b07a48' },
+  paintedBrick:   { tex: 'paintedBrick', tile: 2.5, fallback: '#7a9aa8' },
+  palmBark:       { tex: 'palmBark', tile: 1.2, fallback: '#7a6650' },
+  hullWhite:      { color: '#e9ecef', roughness: 0.4 },
+  hullBlue:       { color: '#24508a', roughness: 0.4 },
+  hullRed:        { color: '#a8302a', roughness: 0.4 },
+  canvasRed:      { color: '#c8402e', roughness: 0.9 },
+  canvasYellow:   { color: '#e8b22a', roughness: 0.9 },
+  canvasBlue:     { color: '#2f6fb0', roughness: 0.9 },
+  courtLine:      { color: '#f2f2f0', roughness: 0.6 },
+  courtBlue:      { color: '#2c5f9e', roughness: 0.55 },
+  padBlue:        { color: '#1f4f8f', roughness: 0.8 },
+  lampOn:         { color: '#fffaf0', emissive: '#fff6e0', roughness: 0.4 },
+  windowGlow:     { color: '#dfeefa', emissive: '#b8d4ea', roughness: 0.3 },
+  steelBlue:      { color: '#2e4d6b', roughness: 0.5, metalness: 0.6 },
+  belt:           { color: '#222222', roughness: 0.95 },
 };
 
 export class AssetLib {
@@ -113,7 +137,7 @@ export class AssetLib {
       params.map = def.proc();
     }
     if (params.map && def.tint && files?.diff) params.color = new THREE.Color(def.tint).multiplyScalar(1.6);
-    if (def.mul && files?.diff) params.color = new THREE.Color(def.mul);
+    if (def.mul && files?.diff) params.color = new THREE.Color(def.mul).multiplyScalar(def.bright ?? 1);
     if (def.emissive) params.emissive = new THREE.Color(def.emissive);
     Object.assign(params, extra);
     let mat;

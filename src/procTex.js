@@ -189,3 +189,75 @@ export function windowFacadeTexture(seed = 5, lit = 0.15) {
   }
   return toTexture(c);
 }
+
+/** Folha de coqueiro: nervura central + folíolos inclinados, com alfa. */
+export function palmFrondTexture(seed = 13) {
+  const W = 128, H = 512;
+  const c = canvas(W, H), g = c.getContext('2d');
+  const r = rng(seed);
+  for (let y = 10; y < H - 4; y += 5) {
+    const t = y / H;
+    const len = (W / 2 - 4) * Math.sin(Math.PI * Math.min(1, t * 1.1)) * (0.75 + r() * 0.25);
+    for (const side of [-1, 1]) {
+      g.strokeStyle = `hsl(${92 + r() * 22}, ${42 + r() * 20}%, ${20 + r() * 18}%)`;
+      g.lineWidth = 2 + r() * 1.5;
+      g.beginPath();
+      g.moveTo(W / 2, y);
+      g.quadraticCurveTo(W / 2 + side * len * 0.5, y + 6, W / 2 + side * len, y + 18 + r() * 8);
+      g.stroke();
+    }
+  }
+  g.strokeStyle = '#6b6a3a';
+  g.lineWidth = 3;
+  g.beginPath(); g.moveTo(W / 2, 0); g.lineTo(W / 2, H); g.stroke();
+  return toTexture(c, { repeat: false, foliage: true });
+}
+
+/** Mapa de normais de ondulação (água), repetível. */
+export function rippleNormalTexture(seed = 3) {
+  const S = 256;
+  const c = canvas(S, S), g = c.getContext('2d');
+  const r = rng(seed);
+  const waves = Array.from({ length: 14 }, () => ({ kx: Math.round((r() - 0.5) * 12), ky: Math.round((r() - 0.5) * 12), a: 0.4 + r(), p: r() * 6.28 }));
+  const hgt = new Float32Array(S * S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    let h = 0;
+    for (const w of waves) h += w.a * Math.sin((w.kx * x + w.ky * y) / S * Math.PI * 2 + w.p);
+    hgt[y * S + x] = h;
+  }
+  const img = g.createImageData(S, S);
+  for (let y = 0; y < S; y++) for (let x = 0; x < S; x++) {
+    const dx = hgt[y * S + (x + 1) % S] - hgt[y * S + (x - 1 + S) % S];
+    const dy = hgt[((y + 1) % S) * S + x] - hgt[((y - 1 + S) % S) * S + x];
+    const nx = -dx * 0.35, ny = -dy * 0.35, nz = 1;
+    const l = Math.hypot(nx, ny, nz);
+    const i = (y * S + x) * 4;
+    img.data[i] = (nx / l * 0.5 + 0.5) * 255;
+    img.data[i + 1] = (ny / l * 0.5 + 0.5) * 255;
+    img.data[i + 2] = (nz / l * 0.5 + 0.5) * 255;
+    img.data[i + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  return toTexture(c, { srgb: false });
+}
+
+/** Faixas de água caindo (cachoeira), com alfa, para rolar na vertical. */
+export function waterfallTexture(seed = 8) {
+  const W = 128, H = 256;
+  const c = canvas(W, H), g = c.getContext('2d');
+  const r = rng(seed);
+  const edge = g.createLinearGradient(0, 0, W, 0);
+  edge.addColorStop(0, 'rgba(210,230,240,0)');
+  edge.addColorStop(0.18, 'rgba(210,230,240,0.55)');
+  edge.addColorStop(0.82, 'rgba(210,230,240,0.55)');
+  edge.addColorStop(1, 'rgba(210,230,240,0)');
+  g.fillStyle = edge;
+  g.fillRect(0, 0, W, H);
+  for (let i = 0; i < 160; i++) {
+    const x = W * 0.12 + r() * W * 0.76, y = r() * H, len = 20 + r() * 80;
+    g.strokeStyle = `rgba(255,255,255,${0.25 + r() * 0.6})`;
+    g.lineWidth = 1 + r() * 3;
+    g.beginPath(); g.moveTo(x, y); g.lineTo(x + (r() - 0.5) * 3, y + len); g.stroke();
+  }
+  return toTexture(c);
+}

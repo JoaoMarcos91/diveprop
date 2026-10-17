@@ -50,7 +50,7 @@ export class UI {
         <h2>Escolha o cenário</h2>
         <div class="cards">${SCENES.map(s => `
           <button class="card" data-scene="${s.id}">
-            <div class="card-art art-${s.id}"></div>
+            <div class="card-art art-${s.id}"><img src="${import.meta.env.BASE_URL}assets/thumbs/${s.id}.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
             <div class="card-body"><h3>${esc(s.name)}</h3><p>${esc(s.desc)}</p><span class="tag">${esc(s.tag)}</span></div>
           </button>`).join('')}
         </div>

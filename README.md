@@ -1,6 +1,6 @@
 # FPVsim
 
-Simulador de drone FPV em 3D que roda direto no navegador, com física realista, 4 cenários
+Simulador de drone FPV em 3D que roda direto no navegador, com física realista, 8 cenários
 e tudo configurável. Joga com controle de videogame (PS3, PS4, PS5, Xbox, Switch) ou com
 rádio FPV de verdade. 100% gratuito.
 
@@ -81,6 +81,8 @@ Ajuste ou teste em **Configurações → Controle → Vibração**. Rádios FPV 
 | ![Fábrica](docs/factory.jpg) **Fábrica Abandonada** — galpão de tijolos com janelas quebradas e telhado furado, treliças, mezanino, contêineres e tanques. | ![Chaminé](docs/chimney.jpg) **A chaminé** — 50 m de altura, oca: entre por cima, mergulhe por dentro e saia pela porta na base. |
 | ![Dentro da chaminé](docs/chimney-dive.jpg) **Mergulho na chaminé** | ![Prédio](docs/tower.jpg) **Prédio Inacabado** — esqueleto de 12 andares, andaime, guindaste de 56 m e estacionamento. |
 | ![Pista](docs/race.jpg) **Pista de Corrida** — 10 portões, cronômetro e melhor volta salva. | ![Campos](docs/fields.jpg) **Campos e Árvores** — fazenda, celeiro vazado, floresta, fios de alta tensão e lago. |
+| ![Praia](docs/beach.jpg) **Praia** — enseada com mar, coqueiros, píer de madeira (voe entre os pilares), farol num rochedo e barcos. | ![Vale](docs/valley.jpg) **Vale nas Montanhas** — rio entre montanhas, cachoeira caindo num lago, ponte alta e floresta de pinheiros. |
+| ![Pedreira](docs/quarry.jpg) **Pedreira** — cava em bancadas com lago no fundo, britador, esteiras de 200 m, silos e caminhões. | ![Ginásio](docs/gym.jpg) **Ginásio Indoor** — pista de tiny whoop cronometrada, arquibancada, cordas e cestas de basquete (passe pelo aro!). |
 
 ## O que dá para configurar
 
@@ -144,7 +146,7 @@ src/osd.js         OSD estilo Betaflight
 src/render.js      renderizador, pós-processamento FPV, resolução dinâmica
 src/assets.js      materiais (texturas CC0) e céus HDRI
 src/kit.js         ferramentas de montagem: caixas, terreno, árvores, grama, colisores
-src/scenes/*.js    os 4 cenários
+src/scenes/*.js    os 8 cenários (raceTrack.js = portões + cronômetro reaproveitável)
 scripts/           download das texturas e publicação
 PROMPT.md          a especificação usada para construir o jogo + a decisão app × site
 ```

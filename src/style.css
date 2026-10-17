@@ -70,10 +70,15 @@ button.danger { color: var(--danger); }
 #scr-scenes { width: min(900px, calc(100vw - 32px)); }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
 .card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
-.card-art { height: 96px; background-size: cover; }
+.card-art { height: 110px; background-size: cover; overflow: hidden; }
+.card-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .art-fields { background: linear-gradient(180deg, #7fb2e6 0%, #cfe3f2 48%, #6f8f3c 52%, #3f5a22 100%); }
 .art-factory { background: linear-gradient(180deg, #9aa3ab 0%, #c6cbd0 50%, #6d4b3c 50%, #4a3a32 100%); }
 .art-tower { background: linear-gradient(180deg, #3a3f66 0%, #f29a5c 55%, #8d8a84 55%, #5b5a58 100%); }
+.art-beach { background: linear-gradient(180deg, #7fb6e8 0%, #d6ecf6 45%, #2e8fa0 45%, #2e8fa0 62%, #e8d6aa 62%, #d9c08a 100%); }
+.art-valley { background: linear-gradient(160deg, #e8a86a 0%, #f2d3a2 30%, #5c6b4a 52%, #2f4a2e 70%, #2b6c73 82%, #24402a 100%); }
+.art-quarry { background: linear-gradient(180deg, #a9b4bf 0%, #d6dbe0 40%, #b29a78 40%, #8a7258 60%, #6e5a44 80%, #3f7a5e 100%); }
+.art-gym { background: linear-gradient(180deg, #2e4d6b 0%, #dfeefa 22%, #6f8fa0 22%, #7a9aa8 55%, #b07a48 55%, #8a5a30 100%); }
 .art-race { background: linear-gradient(180deg, #6fa4dc 0%, #d9e8f3 50%, #ff7a1a 50%, #ff7a1a 56%, #4f7a2c 56%, #3c5e20 100%); }
 .card-body { padding: 12px 14px 14px; }
 .card-body h3 { margin: 0 0 4px; font-size: 16px; text-transform: none; letter-spacing: 0; color: var(--text); }

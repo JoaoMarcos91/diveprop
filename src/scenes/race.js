@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { fbm } from '../kit.js';
 import { V, smooth, scatter } from './common.js';
+import { buildRaceTrack } from './raceTrack.js';
 
 // x, z, altura da base, largura interna, altura interna, cor
 const GATES = [
@@ -11,7 +12,7 @@ const GATES = [
   [70, -45, 3.5, 2.4, 2.2, 'gateBlue'],   // portão elevado
   [85, 0, 0, 2.2, 2.0, 'gateOrange'],
   [60, 40, 0, 2.2, 2.0, 'gateBlue'],
-  [60, 40, 2.4, 2.2, 2.0, 'gateOrange'],  // "escada" (acima do anterior) — pula
+  [60, 40, 2.4, 2.2, 2.0, 'gateOrange', { noSupport: true, yawFrom: 5 }],  // "escada" (acima do anterior)
   [20, 70, 7, 2.6, 2.4, 'gateBlue'],      // dive gate na torre
   [-35, 60, 0, 2.2, 2.0, 'gateOrange'],
   [-70, 15, 0, 2.2, 2.0, 'gateBlue'],
@@ -35,37 +36,12 @@ export function buildRace(kit, settings) {
   });
   const H = kit.heightAt;
 
-  // ordem e orientação: cada portão "olha" para o próximo da sequência
-  const gates = GATES.map(([x, z, base, w, h, mat], i) => ({ x, z, base, w, h, mat, i, y: H(x, z) + base }));
-  for (let k = 0; k < SEQ.length; k++) {
-    const g = gates[SEQ[k]], prev = gates[SEQ[(k - 1 + SEQ.length) % SEQ.length]], next = gates[SEQ[(k + 1) % SEQ.length]];
-    const dir = V(next.x - prev.x, 0, next.z - prev.z).normalize();
-    g.yaw = Math.atan2(-dir.x, -dir.z); // -Z local aponta para a direção de corrida
-  }
-  gates[6].yaw = gates[5].yaw;
+  const track = buildRaceTrack(kit, settings, {
+    gates: GATES.map(([x, z, base, w, h, mat, extra]) => ({ x, z, base, w, h, mat, ...extra })),
+    seq: SEQ, key: 'race', groundAt: H,
+  });
+  const gates = track.gates;
 
-  const pad = 0.22;
-  for (const g of gates) {
-    const q = new THREE.Quaternion().setFromAxisAngle(V(0, 1, 0), g.yaw);
-    const place = (lx, ly, sx, sy, sz, mat, collide = true) => {
-      const p = V(lx, ly, 0).applyQuaternion(q);
-      kit.box(mat, g.x + p.x, g.y + p.y, g.z + p.z, sx, sy, sz, { ry: g.yaw, collide });
-    };
-    const ow = g.w + pad * 2;
-    place(-(g.w / 2 + pad / 2), g.h / 2, pad, g.h + pad * 2, pad, g.mat);
-    place(g.w / 2 + pad / 2, g.h / 2, pad, g.h + pad * 2, pad, g.mat);
-    place(0, g.h + pad / 2, ow, pad, pad, g.mat);
-    if (g.base === 0) place(0, -pad / 2 + 0.02, ow, pad * 0.5, pad, g.mat);
-    else if (g.i !== 6) {
-      // torre/andaime de suporte
-      for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
-        const p = V(sx * (ow / 2), 0, sz * 0.8).applyQuaternion(q);
-        const gy = H(g.x + p.x, g.z + p.z);
-        kit.beam('steel', V(g.x + p.x, gy, g.z + p.z), V(g.x + p.x, g.y, g.z + p.z), 0.05, { seg: 6 });
-      }
-      place(0, -0.05, ow + 0.4, 0.1, 2, 'wood');
-    }
-  }
   // pórtico de largada
   {
     const g = gates[0];
@@ -103,89 +79,12 @@ export function buildRace(kit, settings) {
     kit.grass(scatter(R, Math.round(5500 * veg), -110, -100, 110, 100, (x, z) => gates.every(g => Math.hypot(x - g.x, z - g.z) > 2.5)).map(p => ({ ...p, s: 0.7 + R() * 0.6 })));
   }
 
-  // ---------------------------------------------------------------- cronometragem
-  // anel verde que marca o próximo portão
-  const ringMat = new THREE.MeshBasicMaterial({ color: 0x5bff6a, transparent: true, opacity: 0.85, depthWrite: false });
-  const ring = new THREE.Group();
-  const bar = (sx, sy, x, y) => { const m = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, 0.06), ringMat); m.position.set(x, y, 0); ring.add(m); };
-  kit.scene.add(ring);
-  kit.meshes.push(...[]);
-  const ringParts = ring;
-  let ringFor = -1;
-  const setRing = (g) => {
-    if (ringFor === g.i) return;
-    ringFor = g.i;
-    ringParts.clear();
-    const w = g.w + 0.7, h = g.h + 0.7;
-    bar(w, 0.07, 0, h - 0.35 + 0.035);
-    bar(w, 0.07, 0, -0.35 + 0.035);
-    bar(0.07, h, -w / 2, h / 2 - 0.35);
-    bar(0.07, h, w / 2, h / 2 - 0.35);
-    ring.position.set(g.x, g.y, g.z);
-    ring.rotation.set(0, g.yaw, 0);
-  };
-
-  const state = { next: 0, lap: 0, lapStart: 0, running: false, last: null, best: settings.get('game.bestLaps')?.race ?? null, prev: null, time: 0, msg: null };
-  const local = new THREE.Vector3();
-  const lp = new THREE.Vector3();
-  const inv = new THREE.Quaternion();
-  const fmt = t => `${Math.floor(t / 60)}:${(t % 60).toFixed(2).padStart(5, '0')}`;
-  setRing(gates[SEQ[0]]);
-
-  const update = (dt, drone, pos, game) => {
-    state.time += dt;
-    if (state.prev) {
-      const g = gates[SEQ[state.next]];
-      inv.setFromAxisAngle(V(0, 1, 0), -g.yaw);
-      lp.copy(state.prev).sub(V(g.x, g.y, g.z)).applyQuaternion(inv);
-      local.copy(pos).sub(V(g.x, g.y, g.z)).applyQuaternion(inv);
-      if (lp.z > 0 && local.z <= 0) {
-        const t = lp.z / (lp.z - local.z);
-        const cx = lp.x + (local.x - lp.x) * t, cy = lp.y + (local.y - lp.y) * t;
-        if (Math.abs(cx) < g.w / 2 + 0.1 && cy > -0.1 && cy < g.h + 0.1) {
-          if (state.next === 0) {
-            if (state.running && state.lap > 0) {
-              const lapT = state.time - state.lapStart;
-              state.last = lapT;
-              if (!state.best || lapT < state.best) {
-                state.best = lapT;
-                const best = { ...(settings.get('game.bestLaps') || {}), race: lapT };
-                settings.set('game.bestLaps', best, { silent: true });
-                game.osd.flash(`NOVO RECORDE ${fmt(lapT)}`, 3, '#7dff7a');
-              } else game.osd.flash(`Volta ${fmt(lapT)}`, 2.5, '#ffe27a');
-            } else game.osd.flash('VALENDO!', 1.2, '#7dff7a');
-            state.running = true;
-            state.lap++;
-            state.lapStart = state.time;
-          }
-          game.audio.beep(state.next === 0 ? 2400 : 1600, 0.05, 1);
-          game.haptics?.tick(state.next === 0 && state.lap > 1 ? 'lap' : 'gate');
-          state.next = (state.next + 1) % SEQ.length;
-          setRing(gates[SEQ[state.next]]);
-        }
-      }
-    }
-    state.prev = (state.prev || new THREE.Vector3()).copy(pos);
-    ring.visible = true;
-    const cur = state.running ? fmt(state.time - state.lapStart) : '--:--';
-    return `VOLTA ${Math.max(1, state.lap)}  ${cur}  · PORTÃO ${state.next + 1}/${SEQ.length}` + (state.best ? `  · MELHOR ${fmt(state.best)}` : '');
-  };
-
-  const onRespawn = () => {
-    state.next = 0; state.lap = 0; state.running = false; state.prev = null;
-    setRing(gates[SEQ[0]]);
-  };
-
-  const g0 = gates[0];
-  const back = V(0, 0, 12).applyAxisAngle(V(0, 1, 0), g0.yaw);
-  const sp = V(g0.x + back.x, 0, g0.z + back.z);
-  sp.y = H(sp.x, sp.z) + 0.25;
-  kit.box('concrete', sp.x, sp.y - 0.2, sp.z, 2.4, 0.12, 2.4);
+  const start = track.startPoint(12);
+  kit.box('concrete', start.pos.x, start.pos.y - 0.2, start.pos.z, 2.4, 0.12, 2.4);
   return {
-    spawn: { pos: sp, yaw: g0.yaw },
-    pilot: V(sp.x + 4, 0, sp.z + 3),
+    spawn: start,
+    pilot: V(start.pos.x + 4, 0, start.pos.z + 3),
     orbit: 60,
-    update, onRespawn,
-    dispose: () => { ring.clear(); kit.scene.remove(ring); ringMat.dispose(); },
+    update: track.update, onRespawn: track.onRespawn, dispose: track.dispose,
   };
 }
