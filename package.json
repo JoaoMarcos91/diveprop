@@ -1,0 +1,21 @@
+{
+  "name": "fpvsim",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Simulador de drone FPV com física realista (Three.js + Rapier)",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 5173",
+    "assets": "node scripts/fetch-assets.mjs",
+    "deploy": "bash scripts/deploy.sh"
+  },
+  "dependencies": {
+    "@dimforge/rapier3d-compat": "^0.21.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "vite": "^8.3.4"
+  }
+}

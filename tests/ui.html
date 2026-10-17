@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>FPVsim — teste de UI</title></head>
+<body style="background:linear-gradient(#7fb2e6,#cfe3f2 50%,#5d7f3a 50%,#3f5a22)">
+<div id="ui"></div>
+<script type="module">
+// Página só para conferir os menus sem WebGL (ex.: navegador sem GPU).
+import '../src/style.css';
+import { Settings } from '../src/settings.js';
+import { UI } from '../src/ui.js';
+const settings = new Settings();
+const game = {
+  settings, state: 'menu',
+  input: { gamepad: null, padInfo: null, findGamepad: () => null, listGamepads: () => [], sticks: { throttle: 0.3, yaw: 0.2, pitch: -0.4, roll: 0.6 }, rawButtonsPressed: [] },
+  audio: { ensure() {} },
+  haptics: { play: () => false },
+  startScene: id => ui.toast('Carregaria ' + id), resume() { ui.hide(); }, respawn() {}, toMainMenu() { ui.show('main'); }, reloadScene() {},
+};
+const ui = new UI(game);
+ui.show(new URLSearchParams(location.search).get('s') || 'main');
+const t = new URLSearchParams(location.search).get('tab'); if (t) { ui.tab = t; ui.renderSettings(); }
+setInterval(() => ui.tick(0.016, game.input), 100);
+window.ui = ui;
+</script></body></html>
