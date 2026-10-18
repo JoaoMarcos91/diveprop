@@ -1,0 +1,16 @@
+rules_version = '2';
+// Regras do Firestore para as contas do FPVsim: cada jogador só lê e escreve o próprio
+// documento users/{uid}, e o JSON de configurações tem limite de tamanho.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['username', 'settings'])
+        && request.resource.data.settings is string
+        && request.resource.data.settings.size() < 300000
+        && request.resource.data.username is string
+        && request.resource.data.username.size() <= 20;
+    }
+  }
+}

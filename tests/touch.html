@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>FPVsim — teste dos controles na tela</title></head>
+<body style="background:linear-gradient(#7fb2e6,#cfe3f2 50%,#5d7f3a 50%,#3f5a22)">
+<div id="osd" class="on"><div class="osd-bl"><b>16.4V</b><span>0 mAh</span></div><div class="osd-br"><b>0 km/h</b><span>ALT 0 m</span></div></div>
+<pre id="out" style="position:fixed;left:50%;top:40%;transform:translateX(-50%);color:#fff;font:14px Menlo;text-shadow:0 1px 2px #000"></pre>
+<script type="module">
+// Página só para conferir os controles de toque sem WebGL. Mostra os valores dos sticks.
+import '../src/style.css';
+import { Settings } from '../src/settings.js';
+import { TouchControls } from '../src/touch.js';
+const settings = new Settings();
+settings.data.input.touch = 'on';
+const game = { settings, state: 'flying', input: { gamepad: null }, audio: { ensure() {} }, drone: { armed: false } };
+const t = new TouchControls(game);
+const out = document.getElementById('out');
+setInterval(() => {
+  t.update();
+  for (const a of t.edges) { if (a === 'arm') game.drone.armed = !game.drone.armed; out.dataset.last = a; }
+  t.edges.length = 0;
+  const s = t.sticks;
+  out.textContent = `thr ${s.throttle.toFixed(2)}  yaw ${s.yaw.toFixed(2)}\npitch ${s.pitch.toFixed(2)}  roll ${s.roll.toFixed(2)}\núltimo botão: ${out.dataset.last || '—'}`;
+}, 50);
+window.touch = t;
+</script></body></html>

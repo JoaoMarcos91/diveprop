@@ -35,6 +35,7 @@ export class Input {
     this.keyThrottle = 0;
     this.lastSource = 'none';
     this.override = null; // usado pelo piloto automático de testes
+    this.touch = null;    // controles na tela (TouchControls)
     this.keyEdges = [];
 
     addEventListener('keydown', e => {
@@ -151,6 +152,16 @@ export class Input {
       this.sticks.pitch = k('ArrowUp') - k('ArrowDown');
       this.sticks.roll = k('ArrowRight') - k('ArrowLeft');
     }
+
+    // Controles na tela (celular/tablet): mandam nos sticks enquanto aparecem, a menos que o
+    // teclado esteja em uso; os botões viram bordas como as teclas (armar alterna)
+    const t = this.touch;
+    if (t?.visible && !this.keys.size) {
+      this.lastSource = 'touch';
+      Object.assign(this.sticks, t.sticks);
+      for (const a of t.edges) { this.pressed.add(a); this.keyActions.add(a); }
+    }
+    if (t) t.edges.length = 0;
 
     // no frame em que o controle muda não há bordas: uma chave de armar já ligada não arma
     // sozinha (igual ao Betaflight, que exige desligar e ligar a chave de novo)

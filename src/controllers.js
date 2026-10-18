@@ -5,6 +5,7 @@
 //   Firefox:     "054c-09cc-Wireless Controller"
 //   Safari:      "DualSense Wireless Controller" (sem ids de fabricante)
 // Por isso identificamos pelos ids USB quando existem e, senão, pelo nome.
+import { t } from './i18n.js';
 
 const RADIO_RE = /radiomaster|edgetx|opentx|frsky|taranis|horus|jumper|t-?lite|t-?pro|t-?12|t-?16|tx1[26]|zorro|boxer|pocket|mambo|tango|tbs|betafpv|literadio|flysky|spektrum|futaba|ethos|joystick|simulator|fms|interlink|realflight|deviation/i;
 
@@ -42,24 +43,24 @@ export function identify(gp) {
   const isRadioId = (vendor === '1209' && product === '4f54') || (vendor === '0483' && product === '5710');
   if (isRadioId || (!standard && RADIO_RE.test(id)) || /edgetx|opentx|radiomaster|frsky|jumper/i.test(id)) {
     const name = (id.match(/radiomaster[^()]*|edgetx[^()]*|opentx[^()]*|frsky[^()]*|jumper[^()]*|tbs[^()]*|betafpv[^()]*/i) || [''])[0].trim();
-    return { ...base, family: 'radio', model: name ? `Rádio ${name}` : 'Rádio FPV (modo joystick USB)' };
+    return { ...base, family: 'radio', model: name ? t('Rádio {name}', { name }) : t('Rádio FPV (modo joystick USB)') };
   }
   // Xbox e Switch antes da Sony: "Xbox Wireless Controller" também contém "Wireless Controller"
-  if (vendor === '045e' || /xbox|xinput|x-box/i.test(id)) return { ...base, family: 'xbox', model: 'Controle Xbox' };
+  if (vendor === '045e' || /xbox|xinput|x-box/i.test(id)) return { ...base, family: 'xbox', model: t('Controle Xbox') };
   if (vendor === '057e' || /pro controller|joy-?con|nintendo|switch/i.test(id)) return { ...base, family: 'nintendo', model: 'Nintendo Switch Pro' };
   if (vendor === '054c' || /dualsense|dualshock|playstation|ps[345]|wireless controller/i.test(id)) {
-    let model = SONY_MODELS[product];
-    if (!model) model = /dualsense|ps5/i.test(id) ? 'DualSense (PS5)' : /playstation\(r\)3|dualshock ?3|ps3/i.test(id) ? 'DualShock 3 (PS3)' : /dualshock ?4|ps4|wireless controller/i.test(id) ? 'DualShock 4 (PS4)' : 'Controle PlayStation';
+    let model = SONY_MODELS[product] && t(SONY_MODELS[product]);
+    if (!model) model = /dualsense|ps5/i.test(id) ? 'DualSense (PS5)' : /playstation\(r\)3|dualshock ?3|ps3/i.test(id) ? 'DualShock 3 (PS3)' : /dualshock ?4|ps4|wireless controller/i.test(id) ? 'DualShock 4 (PS4)' : t('Controle PlayStation');
     return { ...base, family: 'playstation', model };
   }
-  return { ...base, family: 'generic', model: standard ? 'Controle genérico' : 'Controle/joystick genérico' };
+  return { ...base, family: 'generic', model: standard ? t('Controle genérico') : t('Controle/joystick genérico') };
 }
 
 export function buttonName(family, i) {
   if (i == null || i < 0) return '—';
   const l = LABELS[family] || (family === 'radio' ? null : LABELS.playstation);
   if (l && l[i]) return l[i];
-  return family === 'radio' ? `Botão/chave ${i + 1}` : `Botão ${i}`;
+  return family === 'radio' ? t('Botão/chave {n}', { n: i + 1 }) : t('Botão {n}', { n: i });
 }
 
 /** Nome de um vínculo de ação: número = botão; 'a4+' / 'a4-' = eixo usado como chave. */
@@ -69,14 +70,15 @@ export function bindingName(family, b) {
     if (!m) return '—';
     const ax = Number(m[1]);
     const dir = m[2] === '+' ? '↑' : '↓';
-    return family === 'radio' ? `Chave CH${ax + 1} ${dir}` : `Eixo ${ax} ${dir}`;
+    return family === 'radio' ? t('Chave CH{n} {dir}', { n: ax + 1, dir }) : t('Eixo {n} {dir}', { n: ax, dir });
   }
   return buttonName(family, b);
 }
 
 export function axisName(family, i) {
-  if (family === 'radio') return `Eixo ${i} (CH${i + 1})`;
-  return ['Stick esq. X', 'Stick esq. Y', 'Stick dir. X', 'Stick dir. Y'][i] || `Eixo ${i}`;
+  if (family === 'radio') return t('Eixo {n} (CH{ch})', { n: i, ch: i + 1 });
+  const n = ['Stick esq. X', 'Stick esq. Y', 'Stick dir. X', 'Stick dir. Y'][i];
+  return n ? t(n) : t('Eixo {n}', { n: i });
 }
 
 /** Que tipo de vibração este controle + navegador aceitam. */

@@ -1,6 +1,7 @@
 // OSD estilo Betaflight feito com elementos HTML.
 // (Um canvas 2D redesenhado a cada frame custava ~11 FPS num notebook antigo; com DOM só
 // os textos que mudam são repintados, e no máximo ~15 vezes por segundo.)
+import { t } from './i18n.js';
 export class OSD {
   constructor(root, settings) {
     this.root = root;
@@ -74,7 +75,7 @@ export class OSD {
     this.set('fps', set.graphics.showFps && st.fps ? `${Math.round(st.fps)} FPS · ${Math.round(st.renderScale * 100)}%` : '');
     if (!flying) return;
     const d = st.drone;
-    this.set('arm', d.armed ? 'ARMADO' : (d.crashed ? 'CRASH' : 'DESARMADO'), d.armed ? '#7dff7a' : (d.crashed ? '#ff5c5c' : '#ffd24a'));
+    this.set('arm', d.armed ? t('ARMADO') : (d.crashed ? 'CRASH' : t('DESARMADO')), d.armed ? '#7dff7a' : (d.crashed ? '#ff5c5c' : '#ffd24a'));
     this.set('mode', { acro: 'ACRO', angle: 'ANGLE', horizon: 'HOR' }[set.fc.mode] + (set.fc.airmode ? ' AIR' : ''));
     this.set('turtle', st.turtle ? 'TURTLE' : '');
     const ft = d.flightTime;
@@ -90,6 +91,6 @@ export class OSD {
     this.set('thr', `THR ${Math.round(st.throttle * 100)}%`);
     this.set('speed', `${Math.round(st.speed * 3.6)} km/h`);
     this.set('alt', `ALT ${st.alt.toFixed(1)}m`);
-    if (low && !this.messages.some(m => m.text === 'BATERIA FRACA')) this.flash('BATERIA FRACA', 1, '#ff5c5c');
+    if (low && !this.messages.some(m => m.text === t('BATERIA FRACA'))) this.flash(t('BATERIA FRACA'), 1, '#ff5c5c');
   }
 }

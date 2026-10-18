@@ -4,7 +4,7 @@ import RAPIER from '@dimforge/rapier3d-compat';
 import './style.css';
 import { Settings, CONTROL_LAYOUTS, PROFILE_KEYS } from './settings.js';
 import { Haptics } from './haptics.js';
-import { bindingName } from './controllers.js';
+import { bindingName, identify } from './controllers.js';
 import { Input } from './input.js';
 import { Renderer } from './render.js';
 import { AssetLib, displayColor } from './assets.js';
@@ -15,6 +15,9 @@ import { CameraRig } from './camera.js';
 import { GameAudio } from './audio.js';
 import { OSD } from './osd.js';
 import { UI } from './ui.js';
+import { TouchControls } from './touch.js';
+import { Cloud } from './cloud.js';
+import { t, setLang, resolveLang } from './i18n.js';
 import { SCENES } from './scenes/index.js';
 
 const MODES = ['acro', 'angle', 'horizon'];
@@ -36,6 +39,7 @@ class Game {
   }
 
   async init() {
+    setLang(resolveLang(this.settings.get('game.lang')));
     const canvas = document.getElementById('game');
     this.r = new Renderer(canvas, this.settings);
     this.r.renderer.info.autoReset = false;
@@ -45,13 +49,17 @@ class Game {
     this.haptics = new Haptics(this.settings, this.input);
     this.audio = new GameAudio(this.settings);
     this.osd = new OSD(document.getElementById('osd'), this.settings);
+    this.cloud = new Cloud(this.settings);
     this.ui = new UI(this);
+    this.cloud.onChange(() => this.ui.onCloud());
+    this.touch = new TouchControls(this);
+    this.input.touch = this.touch;
     this.lib = new AssetLib(this.r.renderer, this.settings);
-    this.ui.loading('Iniciando…', 0.05, 'Carregando motor de física');
+    this.ui.loading(t('Iniciando…'), 0.05, t('Carregando motor de física'));
     await Promise.all([RAPIER.init(), this.lib.init()]);
 
     this.input.onConnect = () => this.ui.updatePadStatus();
-    this.input.onDisconnect = () => { this.ui.toast('Controle desconectado'); this.ui.updatePadStatus(); if (this.state === 'flying') this.pause(); };
+    this.input.onDisconnect = () => { this.ui.toast(t('Controle desconectado')); this.ui.updatePadStatus(); if (this.state === 'flying') this.pause(); };
     this.input.onPadChange = (gp, info) => this.onPadChange(gp, info);
     this.settings.onChange(path => this.onSetting(path));
     addEventListener('pointerdown', () => this.audio.ensure());
@@ -61,6 +69,7 @@ class Game {
     await this.loadScene(this.settings.get('game.scene'));
     this.state = 'menu';
     this.ui.show('main', { push: false });
+    this.cloud.start(); // sessão salva: traz o que mudou em outro aparelho (sem travar o menu)
     this.last = performance.now();
     this.lastRender = 0;
     requestAnimationFrame(t => this.frame(t));
@@ -72,7 +81,7 @@ class Game {
   async loadScene(id) {
     const def = SCENES.find(s => s.id === id) || SCENES[0];
     this.sceneDef = def;
-    this.ui.loading(def.name, 0.1, def.desc);
+    this.ui.loading(t(def.name), 0.1, t(def.desc));
     await new Promise(r => setTimeout(r, 30));
 
     // limpa o anterior
@@ -88,7 +97,7 @@ class Game {
     this.world.timestep = 1 / w.physicsHz;
     const scene = this.scene = new THREE.Scene();
 
-    this.ui.loading(def.name, 0.2, 'Céu e iluminação');
+    this.ui.loading(t(def.name), 0.2, t('Céu e iluminação'));
     const sky = this.sky = await this.lib.loadSky(def.sky);
     scene.background = sky.background;
     scene.backgroundIntensity = sky.exposure;
@@ -128,13 +137,13 @@ class Game {
     this.fogDisplay = displayColor(sky.fogColor, 1);
     scene.fog = new THREE.Fog(this.fogDisplay.clone(), 50, 400);
 
-    this.ui.loading(def.name, 0.35, 'Construindo o cenário');
+    this.ui.loading(t(def.name), 0.35, t('Construindo o cenário'));
     await new Promise(r => setTimeout(r, 20));
     const kit = this.kit = new Kit({ scene, world: this.world, lib: this.lib, settings: this.settings, seed: def.seed || 7, skyColor: sky.fogColor.clone().lerp(sky.skyColor, 0.5).multiplyScalar(0.85) });
     const info = this.info = def.build(kit, this.settings, THREE) || {};
     kit.flush();
-    this.ui.loading(def.name, 0.55, `Texturas (${kit.colliderCount} colisores)`);
-    await this.lib.ready(p => this.ui.loading(def.name, 0.55 + p * 0.35, 'Texturas'));
+    this.ui.loading(t(def.name), 0.55, t('Texturas ({n} colisores)', { n: kit.colliderCount }));
+    await this.lib.ready(p => this.ui.loading(t(def.name), 0.55 + p * 0.35, t('Texturas')));
 
     // drone
     this.drone = new Drone(this.world, this.settings, info.spawn);
@@ -145,7 +154,7 @@ class Game {
     this.rig.reset();
     this.world.step(); // inicializa broadphase
 
-    this.ui.loading(def.name, 0.95, 'Compilando shaders');
+    this.ui.loading(t(def.name), 0.95, t('Compilando shaders'));
     this.updateFog();
     this.syncModel();
     this.rig.update(0.016, this.drone, this.model, kit.heightAt, this.pilotPos, this.r.aspect);
@@ -161,10 +170,10 @@ class Game {
     await this.loadScene(id);
     this.ui.hide();
     this.state = 'flying';
-    this.osd.flash(`${this.sceneDef.name}`, 2.5, '#ffe27a');
-    this.osd.flash(`${this.actionLabel('arm', 'Espaço')} para armar`, 2.5);
+    this.osd.flash(t(this.sceneDef.name), 2.5, '#ffe27a');
+    this.armHint = 1.5; // dica de armar repete enquanto o drone não for armado pela 1ª vez
     const sug = this.sceneDef.suggestDrone;
-    if (sug && this.settings.get('drone.preset') !== sug) this.ui.toast(`Dica: este cenário foi feito para o ${this.sceneDef.suggestLabel} (Configurações → Física → Preset de drone)`, 6000);
+    if (sug && this.settings.get('drone.preset') !== sug) this.ui.toast(t('Dica: este cenário foi feito para o {drone} (Configurações → Física → Preset de drone)', { drone: this.sceneDef.suggestLabel }), 6000);
   }
 
   async reloadScene() {
@@ -197,9 +206,9 @@ class Game {
     s.save();
     this.loadingProfile = false;
     this.saveProfile();
-    const hint = info.family === 'radio' ? ' · AETR, arme na chave CH5'
-      : !info.standard ? ' · sem mapeamento padrão: confira em Configurações → Controle' : '';
-    this.ui.toast(`${info.model} conectado${hint}`, 4000);
+    const hint = info.family === 'radio' ? t(' · AETR, arme na chave CH5')
+      : !info.standard ? t(' · sem mapeamento padrão: confira em Configurações → Controle') : '';
+    this.ui.toast(t('{model} conectado', { model: info.model }) + hint, 4000);
     this.ui.updatePadStatus();
     if (this.ui.current === 'settings') this.ui.renderSettings();
   }
@@ -212,6 +221,21 @@ class Game {
     for (const k of PROFILE_KEYS) prof[k] = structuredClone(inp[k]);
     inp.profiles = { ...(inp.profiles || {}), [gp.id]: prof };
     this.settings.save();
+  }
+
+  armHintText() {
+    if (this.touch.visible) return t('Throttle embaixo e toque em ARMAR');
+    if (!this.input.gamepad) return t('Espaço arma · W/S throttle · setas pitch/roll · A/D yaw');
+    return t('{btn} para armar (throttle embaixo)', { btn: this.actionLabel('arm', t('Espaço')) });
+  }
+
+  /** Idioma mudou (ou a configuração foi importada/restaurada): troca todos os textos na hora. */
+  applyLang() {
+    setLang(resolveLang(this.settings.get('game.lang')));
+    if (this.input.gamepad) this.input.padInfo = identify(this.input.gamepad);
+    this.ui.relang();
+    this.touch.relang();
+    this.osd.messages = []; // avisos já na tela estavam no idioma anterior
   }
 
   /** Nome do botão/chave de uma ação, para as mensagens na tela. */
@@ -248,6 +272,7 @@ class Game {
   }
 
   onSetting(path) {
+    if (path === 'game.lang' || path === '*') this.applyLang();
     if (path.startsWith('input.') && !path.startsWith('input.profiles') || path === 'input') this.saveProfile();
     if (!this.drone) return;
     if (path.startsWith('drone') || path.startsWith('world') || path === '*') {
@@ -292,10 +317,17 @@ class Game {
 
     const input = this.input;
     this.onFrame?.(dt);
+    this.touch.update();
     const sticks = input.poll(dt);
     if (this.ui.isOpen()) this.ui.tick(dt, input);
 
-    if (this.state === 'flying') this.handleActions(sticks);
+    if (this.state === 'flying') {
+      this.handleActions(sticks);
+      if (this.armHint != null) {
+        if (this.drone?.armed) this.armHint = null;
+        else if ((this.armHint -= dt) <= 0) { this.armHint = 7; this.osd.flash(this.armHintText(), 4); }
+      }
+    }
     else if (this.state === 'paused' && !this.ui.isOpen()) this.state = 'flying';
 
     const drone = this.drone;
@@ -392,7 +424,7 @@ class Game {
           const m = CAMS[(CAMS.indexOf(s.get('camera.mode')) + 1) % CAMS.length];
           s.set('camera.mode', m);
           this.rig.reset();
-          this.osd.flash(CAM_LABEL[m], 1.2);
+          this.osd.flash(t(CAM_LABEL[m]), 1.2);
           break;
         }
         case 'mode': {
@@ -401,8 +433,8 @@ class Game {
           this.osd.flash(MODE_LABEL[m], 1.2);
           break;
         }
-        case 'tiltUp': s.set('camera.uptilt', Math.min(70, s.get('camera.uptilt') + 5)); this.osd.flash(`Câmera ${s.get('camera.uptilt')}°`, 0.8); break;
-        case 'tiltDown': s.set('camera.uptilt', Math.max(-10, s.get('camera.uptilt') - 5)); this.osd.flash(`Câmera ${s.get('camera.uptilt')}°`, 0.8); break;
+        case 'tiltUp': s.set('camera.uptilt', Math.min(70, s.get('camera.uptilt') + 5)); this.osd.flash(t('Câmera {deg}°', { deg: s.get('camera.uptilt') }), 0.8); break;
+        case 'tiltDown': s.set('camera.uptilt', Math.max(-10, s.get('camera.uptilt') - 5)); this.osd.flash(t('Câmera {deg}°', { deg: s.get('camera.uptilt') }), 0.8); break;
         case 'fovUp': s.set('camera.fov', Math.min(160, s.get('camera.fov') + 5)); this.osd.flash(`FOV ${s.get('camera.fov')}°`, 0.8); break;
         case 'fovDown': s.set('camera.fov', Math.max(60, s.get('camera.fov') - 5)); this.osd.flash(`FOV ${s.get('camera.fov')}°`, 0.8); break;
       }
@@ -445,14 +477,14 @@ class Game {
     // eventos do drone (várias batidas no mesmo frame viram uma só, com a maior intensidade)
     let bump = 0;
     for (const ev of drone.events.splice(0)) {
-      if (ev === 'arm') { this.osd.flash('ARMADO', 1, '#7dff7a'); this.audio.beep(2000, 0.07, 2); this.haptics.tick('arm'); }
-      else if (ev === 'disarm') { this.osd.flash('DESARMADO', 1, '#ffd24a'); this.audio.beep(1200, 0.12, 1); this.haptics.tick('disarm'); }
-      else if (ev === 'armBlocked') { this.osd.flash('Abaixe o throttle para armar', 1.5, '#ffd24a'); this.audio.beep(600, 0.15, 1); }
+      if (ev === 'arm') { this.osd.flash(t('ARMADO'), 1, '#7dff7a'); this.audio.beep(2000, 0.07, 2); this.haptics.tick('arm'); }
+      else if (ev === 'disarm') { this.osd.flash(t('DESARMADO'), 1, '#ffd24a'); this.audio.beep(1200, 0.12, 1); this.haptics.tick('disarm'); }
+      else if (ev === 'armBlocked') { this.osd.flash(t('Abaixe o throttle para armar'), 1.5, '#ffd24a'); this.audio.beep(600, 0.15, 1); }
       else if (ev === 'crash') {
         this.audio.crash(drone.lastImpact);
         this.haptics.crash();
         const mode = this.settings.get('world.crashMode');
-        this.osd.flash(mode === 'reset' ? 'CRASH!' : `CRASH! ${this.actionLabel('reset', 'R')} para resetar`, 2.2, '#ff5c5c');
+        this.osd.flash(mode === 'reset' ? 'CRASH!' : t('CRASH! {btn} para resetar', { btn: this.actionLabel('reset', 'R') }), 2.2, '#ff5c5c');
       } else if (ev?.type === 'hit') bump = Math.max(bump, ev.impact);
     }
     if (bump > 0 && !drone.crashed) { this.audio.crash(bump * 0.4); this.haptics.impact(bump); }
@@ -483,5 +515,13 @@ game.init().catch(err => {
   console.error(err);
   const el = document.getElementById('fatal');
   el.hidden = false;
-  el.textContent = 'Erro ao iniciar: ' + (err?.message || err) + '\n\nO jogo precisa de WebGL2. Ative a aceleração de hardware do navegador ou tente outro navegador atualizado (Chrome, Edge, Firefox ou Safari). Em Macs antigos o Safari costuma funcionar melhor.';
+  el.innerHTML = `<h2>${t('Não deu para abrir o 3D')}</h2>
+    <p>${t('O FPVsim precisa de <b>WebGL2</b>. Quase sempre resolve:')}</p>
+    <ul><li>${t('atualizar o navegador ou abrir em outro (Chrome, Edge, Firefox ou Safari);')}</li>
+    <li>${t('ligar a <b>aceleração de hardware</b> nas configurações do navegador;')}</li>
+    <li>${t('no celular, abrir o link no navegador em vez de dentro de um app (Instagram, Facebook…);')}</li>
+    <li>${t('em Macs antigos, usar o Safari.')}</li></ul>
+    <details><summary>${t('Detalhes do erro')}</summary><code></code></details>`;
+  el.querySelector('code').textContent = String(err?.message || err);
+  document.getElementById('ui').classList.remove('open');
 });

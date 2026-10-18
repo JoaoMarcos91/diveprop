@@ -4,6 +4,8 @@ import { stickToRate } from './rates.js';
 import { SCENES } from './scenes/index.js';
 import { buttonName, bindingName, axisName, hapticsSupport } from './controllers.js';
 import { estimateTopSpeed, tuneTopSpeed, thrustToWeight, hoverThrottle } from './flightPerf.js';
+import { t, getLang, LANGS } from './i18n.js';
+import { cloudMessage } from './cloud.js';
 
 const ACTION_NAMES = {
   arm: 'Armar / desarmar', reset: 'Resetar drone', camera: 'Trocar câmera', mode: 'Modo de voo', pause: 'Pausa / menu',
@@ -18,6 +20,7 @@ const HAPTICS_LABEL = {
 };
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const te = (s, v) => esc(t(s, v));
 
 export class UI {
   constructor(game) {
@@ -33,83 +36,6 @@ export class UI {
     this.calib = null;
     this.live = [];       // funções atualizadas a cada frame
     this.build();
-    this.settings.onChange((path) => this.onSettingChanged(path));
-  }
-
-  build() {
-    this.root.innerHTML = `
-      <div class="screen" id="scr-main">
-        <div class="brand"><h1>FPV<span>sim</span></h1><p>Simulador de drone FPV · física realista</p></div>
-        <div class="menu-list">
-          <button data-act="fly" class="primary">Voar</button>
-          <button data-act="settings">Configurações</button>
-          <button data-act="help">Controles</button>
-        </div>
-        <div class="pad-status" data-pad></div>
-      </div>
-      <div class="screen" id="scr-scenes">
-        <h2>Escolha o cenário</h2>
-        <div class="cards">${SCENES.map(s => `
-          <button class="card" data-scene="${s.id}">
-            <div class="card-art art-${s.id}"><img src="${import.meta.env.BASE_URL}assets/thumbs/${s.id}.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
-            <div class="card-body"><h3>${esc(s.name)}</h3><p>${esc(s.desc)}</p><span class="tag">${esc(s.tag)}</span></div>
-          </button>`).join('')}
-        </div>
-        <div class="bar"><button data-act="back">Voltar</button></div>
-      </div>
-      <div class="screen" id="scr-pause">
-        <h2>Pausado</h2>
-        <div class="menu-list">
-          <button data-act="resume" class="primary">Continuar</button>
-          <button data-act="respawn">Resetar drone</button>
-          <button data-act="settings">Configurações</button>
-          <button data-act="fly">Trocar cenário</button>
-          <button data-act="help">Controles</button>
-          <button data-act="mainmenu">Menu principal</button>
-        </div>
-        <div class="pad-status" data-pad></div>
-      </div>
-      <div class="screen wide" id="scr-settings">
-        <div class="settings-head"><h2>Configurações</h2><div class="tabs">${SCHEMA.map(t => `<button data-tab="${t.id}">${esc(t.tab)}</button>`).join('')}</div></div>
-        <div class="reload-bar" hidden><span></span><button data-act="apply-reload" class="primary">Aplicar agora</button></div>
-        <div class="settings-body"></div>
-        <div class="bar"><button data-act="reset-tab">Restaurar padrão desta aba</button><button data-act="back" class="primary">Voltar</button></div>
-      </div>
-      <div class="screen" id="scr-help">
-        <h2>Controles</h2>
-        <div class="help">
-          <div><h3>Controle (PS3/PS4/PS5, Xbox, Switch) · Modo 2</h3><ul>
-            <li><b>Stick esquerdo</b> ↕ throttle · ↔ yaw</li>
-            <li><b>Stick direito</b> ↕ pitch · ↔ roll</li>
-            <li><b>R1 / RB</b> armar / desarmar (throttle embaixo)</li>
-            <li><b>△ / Y</b> resetar drone · <b>□ / X</b> trocar câmera</li>
-            <li><b>L1 / LB</b> modo de voo (Acro / Angle / Horizon)</li>
-            <li><b>✕ / A segurado</b> turtle mode (desvirar)</li>
-            <li><b>D-pad ↑↓</b> ângulo da câmera · <b>←→</b> FOV</li>
-            <li><b>Options / Menu</b> pausa · nos menus: D-pad + ✕/A e ○/B</li>
-          </ul><p class="hint">Conecte o controle (USB ou Bluetooth) e aperte qualquer botão para o navegador reconhecer. Controles que vibram (PS4, PS5, Xbox…) tremem nas batidas.</p>
-          <h3>Rádio FPV (EdgeTX / OpenTX)</h3><ul>
-            <li>Ligue o rádio no USB em modo <b>Joystick (HID)</b></li>
-            <li>Layout AETR automático · <b>CH5</b> arma (chave mantida) · <b>CH6</b> modo · <b>CH7</b> turtle</li>
-            <li>Ajuste canais, chaves e calibração em Configurações → Controle</li>
-          </ul></div>
-          <div><h3>Teclado (reserva)</h3><ul>
-            <li><b>W / S</b> throttle · <b>X</b> corta</li>
-            <li><b>A / D</b> yaw · <b>setas</b> pitch / roll</li>
-            <li><b>Espaço</b> armar · <b>R</b> reset · <b>C</b> câmera</li>
-            <li><b>M</b> modo · <b>T</b> turtle · <b>Esc</b> pausa</li>
-            <li><b>[ ]</b> ângulo da câmera · <b>, .</b> FOV</li>
-          </ul><p class="hint">Dica: comece em <b>Angle</b> (L1) se nunca voou FPV. Em <b>Acro</b> o drone não se nivela sozinho — é assim que drones reais de freestyle voam.</p></div>
-        </div>
-        <div class="bar"><button data-act="back" class="primary">Voltar</button></div>
-      </div>
-      <div class="screen" id="scr-loading">
-        <h2 data-loading-title>Carregando…</h2>
-        <div class="progress"><div></div></div>
-        <p class="hint" data-loading-hint></p>
-      </div>
-      <div class="toast" hidden></div>`;
-
     this.root.addEventListener('click', e => {
       const el = e.target.closest('[data-act],[data-scene],[data-tab]');
       if (!el) return;
@@ -118,6 +44,103 @@ export class UI {
       if (el.dataset.tab) { this.tab = el.dataset.tab; return this.renderSettings(); }
       this.action(el.dataset.act);
     });
+    this.settings.onChange((path) => this.onSettingChanged(path));
+  }
+
+  /** Troca de idioma: refaz as telas e volta para a que estava aberta. */
+  relang() {
+    const cur = this.current, hist = this.history;
+    this.build();
+    if (cur) { this.show(cur, { push: false }); this.history = hist; }
+  }
+
+  build() {
+    const other = getLang() === 'en' ? 'pt' : 'en';
+    this.root.innerHTML = `
+      <div class="screen" id="scr-main">
+        <div class="brand"><h1>FPV<span>sim</span></h1><p>${te('Simulador de drone FPV · física realista')}</p></div>
+        <div class="menu-list">
+          <button data-act="fly" class="primary">${te('Voar')}</button>
+          <button data-act="settings">${te('Configurações')}</button>
+          <button data-act="help">${te('Controles')}</button>
+          <button data-act="account" data-account-btn hidden></button>
+        </div>
+        <div class="pad-status" data-pad></div>
+        <div class="menu-foot"><button data-act="share" class="small">${te('Compartilhar com amigos')}</button><button data-act="lang" class="small" lang="${other}">${esc(LANGS[other])}</button><a href="https://github.com/JoaoMarcos91/fpvsim" target="_blank" rel="noopener">${te('Grátis e de código aberto · GitHub')}</a></div>
+      </div>
+      <div class="screen" id="scr-scenes">
+        <h2>${te('Escolha o cenário')}</h2>
+        <div class="cards">${SCENES.map(s => `
+          <button class="card" data-scene="${s.id}">
+            <div class="card-art art-${s.id}"><img src="${import.meta.env.BASE_URL}assets/thumbs/${s.id}.jpg" alt="" loading="lazy" onerror="this.remove()"></div>
+            <div class="card-body"><h3>${te(s.name)}</h3><p>${te(s.desc)}</p><span class="tag">${te(s.tag)}</span></div>
+          </button>`).join('')}
+        </div>
+        <div class="bar"><button data-act="back">${te('Voltar')}</button></div>
+      </div>
+      <div class="screen" id="scr-pause">
+        <h2>${te('Pausado')}</h2>
+        <div class="menu-list">
+          <button data-act="resume" class="primary">${te('Continuar')}</button>
+          <button data-act="respawn">${te('Resetar drone')}</button>
+          <button data-act="settings">${te('Configurações')}</button>
+          <button data-act="fly">${te('Trocar cenário')}</button>
+          <button data-act="help">${te('Controles')}</button>
+          <button data-act="mainmenu">${te('Menu principal')}</button>
+        </div>
+        <div class="pad-status" data-pad></div>
+      </div>
+      <div class="screen wide" id="scr-settings">
+        <div class="settings-head"><h2>${te('Configurações')}</h2><div class="tabs">${SCHEMA.map(tb => `<button data-tab="${tb.id}">${te(tb.tab)}</button>`).join('')}</div></div>
+        <div class="reload-bar" hidden><span></span><button data-act="apply-reload" class="primary">${te('Aplicar agora')}</button></div>
+        <div class="settings-body"></div>
+        <div class="bar"><button data-act="reset-tab">${te('Restaurar padrão desta aba')}</button><button data-act="back" class="primary">${te('Voltar')}</button></div>
+      </div>
+      <div class="screen" id="scr-help">
+        <h2>${te('Controles')}</h2>
+        <div class="help">
+          <div><h3>${te('Controle (PS3/PS4/PS5, Xbox, Switch) · Modo 2')}</h3><ul>
+            <li>${t('<b>Stick esquerdo</b> ↕ throttle · ↔ yaw')}</li>
+            <li>${t('<b>Stick direito</b> ↕ pitch · ↔ roll')}</li>
+            <li>${t('<b>R1 / RB</b> armar / desarmar (throttle embaixo)')}</li>
+            <li>${t('<b>△ / Y</b> resetar drone · <b>□ / X</b> trocar câmera')}</li>
+            <li>${t('<b>L1 / LB</b> modo de voo (Acro / Angle / Horizon)')}</li>
+            <li>${t('<b>✕ / A segurado</b> turtle mode (desvirar)')}</li>
+            <li>${t('<b>D-pad ↑↓</b> ângulo da câmera · <b>←→</b> FOV')}</li>
+            <li>${t('<b>Options / Menu</b> pausa · nos menus: D-pad + ✕/A e ○/B')}</li>
+          </ul><p class="hint">${te('Conecte o controle (USB ou Bluetooth) e aperte qualquer botão para o navegador reconhecer. Controles que vibram (PS4, PS5, Xbox…) tremem nas batidas.')}</p>
+          <h3>${te('Rádio FPV (EdgeTX / OpenTX)')}</h3><ul>
+            <li>${t('Ligue o rádio no USB em modo <b>Joystick (HID)</b>')}</li>
+            <li>${t('Layout AETR automático · <b>CH5</b> arma (chave mantida) · <b>CH6</b> modo · <b>CH7</b> turtle')}</li>
+            <li>${te('Ajuste canais, chaves e calibração em Configurações → Controle')}</li>
+          </ul></div>
+          <div><h3>${te('Teclado (reserva)')}</h3><ul>
+            <li>${t('<b>W / S</b> throttle · <b>X</b> corta')}</li>
+            <li>${t('<b>A / D</b> yaw · <b>setas</b> pitch / roll')}</li>
+            <li>${t('<b>Espaço</b> armar · <b>R</b> reset · <b>C</b> câmera')}</li>
+            <li>${t('<b>M</b> modo · <b>T</b> turtle · <b>Esc</b> pausa')}</li>
+            <li>${t('<b>[ ]</b> ângulo da câmera · <b>, .</b> FOV')}</li>
+          </ul>
+          <h3>${te('Celular e tablet (toque)')}</h3><ul>
+            <li>${t('<b>Stick esquerdo</b> ↕ throttle (fica onde você soltar) · ↔ yaw')}</li>
+            <li>${t('<b>Stick direito</b> ↕ pitch · ↔ roll')}</li>
+            <li>${t('<b>ARMAR</b> com o throttle embaixo · <b>MODO</b> Acro/Angle/Horizon · <b>CÂM</b> câmera · <b>RESET</b>')}</li>
+            <li>${te('Jogue com o celular deitado. No Android, "Adicionar à tela inicial" abre em tela cheia')}</li>
+          </ul><p class="hint">${t('Dica: comece em <b>Angle</b> (L1, M ou MODO) se nunca voou FPV. Em <b>Acro</b> o drone não se nivela sozinho — é assim que drones reais de freestyle voam.')}</p></div>
+        </div>
+        <div class="bar"><button data-act="back" class="primary">${te('Voltar')}</button></div>
+      </div>
+      <div class="screen" id="scr-account">
+        <h2>${te('Conta')}</h2>
+        <div data-account></div>
+        <div class="bar"><button data-act="back">${te('Voltar')}</button></div>
+      </div>
+      <div class="screen" id="scr-loading">
+        <h2 data-loading-title>${te('Carregando…')}</h2>
+        <div class="progress"><div></div></div>
+        <p class="hint" data-loading-hint></p>
+      </div>
+      <div class="toast" hidden></div>`;
   }
 
   action(act) {
@@ -126,6 +149,9 @@ export class UI {
       case 'fly': this.show('scenes'); break;
       case 'settings': this.show('settings'); break;
       case 'help': this.show('help'); break;
+      case 'share': this.share(); break;
+      case 'account': this.show('account'); break;
+      case 'lang': this.settings.set('game.lang', getLang() === 'en' ? 'pt' : 'en'); break;
       case 'back': this.back(); break;
       case 'resume': g.resume(); break;
       case 'respawn': g.respawn(); g.resume(); break;
@@ -145,11 +171,26 @@ export class UI {
     this.root.classList.add('open');
     for (const s of this.root.querySelectorAll('.screen')) s.classList.toggle('active', s.id === 'scr-' + name);
     if (name === 'settings') this.renderSettings();
+    if (name === 'account') this.renderAccount();
     this.updatePadStatus();
+    this.updateAccountButton();
     requestAnimationFrame(() => {
       const first = this.root.querySelector(`#scr-${name} .primary, #scr-${name} button`);
       first?.focus({ preventScroll: true });
     });
+  }
+
+  /** Compartilhar o site: menu do sistema no celular, senão copia o link. */
+  async share() {
+    const url = 'https://joaomarcos91.github.io/fpvsim/';
+    const data = { title: 'FPVsim', text: t('Simulador de drone FPV grátis no navegador, com física realista. Dá para jogar com controle de PS4/PS5/Xbox, rádio FPV ou no celular:'), url };
+    try {
+      if (navigator.share) return await navigator.share(data);
+      await navigator.clipboard.writeText(`${data.text} ${url}`);
+      this.toast(t('Link copiado — é só colar no WhatsApp, Discord…'), 3500);
+    } catch (e) {
+      if (e?.name !== 'AbortError') this.toast(url, 8000);
+    }
   }
 
   hide() {
@@ -193,9 +234,108 @@ export class UI {
     const gp = this.game.input.gamepad || this.game.input.findGamepad();
     for (const el of this.root.querySelectorAll('[data-pad]')) {
       el.innerHTML = gp
-        ? `<span class="dot ok"></span>Conectado: ${esc(this.game.input.padInfo?.model || gp.id.replace(/\(.*?Vendor.*?\)/i, '').trim().slice(0, 48))}`
-        : `<span class="dot"></span>Nenhum controle — conecte um controle ou rádio FPV e aperte um botão (ou use o teclado)`;
+        ? `<span class="dot ok"></span>${te('Conectado: {model}', { model: this.game.input.padInfo?.model || gp.id.replace(/\(.*?Vendor.*?\)/i, '').trim().slice(0, 48) })}`
+        : this.game.touch?.enabled()
+          ? `<span class="dot ok"></span>${te('Controles na tela (toque) · também dá para conectar um controle Bluetooth')}`
+          : `<span class="dot"></span>${te('Nenhum controle — conecte um controle ou rádio FPV e aperte um botão (ou use o teclado)')}`;
     }
+  }
+
+  // ------------------------------------------------------------------ conta
+  updateAccountButton() {
+    const cloud = this.game.cloud, btn = this.root.querySelector('[data-account-btn]');
+    if (!btn) return;
+    btn.hidden = !cloud?.configured();
+    btn.textContent = cloud?.user ? t('Conta: {user}', { user: cloud.user }) : t('Entrar / criar conta');
+  }
+
+  /** Chamado quando a conta muda (entrou, saiu, salvou…). */
+  onCloud() {
+    this.updateAccountButton();
+    if (this.current === 'account') this.renderAccountStatus();
+    if (this.current === 'settings' && this.tab === 'presets') this.renderSettings();
+  }
+
+  cloudStatusText() {
+    const c = this.game.cloud;
+    if (!c?.user) return '';
+    if (c.status === 'syncing') return t('Salvando na nuvem…');
+    if (c.status === 'error') return t('Não deu para sincronizar: {msg}', { msg: c.error });
+    if (c.savedAt) return t('Tudo salvo na nuvem ✓ ({time})', { time: new Date(c.savedAt).toLocaleTimeString(getLang() === 'en' ? 'en' : 'pt-BR', { hour: '2-digit', minute: '2-digit' }) });
+    return t('Conectado');
+  }
+
+  renderAccountStatus() {
+    const el = this.root.querySelector('[data-cloud-status]');
+    if (el) { el.textContent = this.cloudStatusText(); el.classList.toggle('err', this.game.cloud.status === 'error'); }
+    else this.renderAccount();
+  }
+
+  renderAccount() {
+    const box = this.root.querySelector('[data-account]');
+    const cloud = this.game.cloud;
+    if (!box || !cloud) return;
+    if (!cloud.configured()) { box.innerHTML = `<p class="hint">${te('As contas ainda não foram ativadas neste site.')}</p>`; return; }
+    // botões ocupados durante a conversa com o servidor; mensagem embaixo
+    const run = async (fn, ok) => {
+      const before = cloud.user;
+      box.querySelectorAll('button').forEach(b => { b.disabled = true; });
+      box.querySelector('[data-msg]').className = 'form-msg';
+      box.querySelector('[data-msg]').textContent = t('Aguarde…');
+      try {
+        const r = await fn();
+        if (ok) this.toast(typeof ok === 'function' ? ok(r) : ok, 3500);
+        this.renderAccount();
+      } catch (e) {
+        // entrou mas a sincronização falhou (ou saiu): mostra a tela certa com o erro
+        if (cloud.user !== before) this.renderAccount();
+        box.querySelectorAll('button').forEach(b => { b.disabled = false; });
+        const msg = box.querySelector('[data-msg]');
+        msg.className = 'form-msg err';
+        msg.textContent = cloudMessage(e);
+      }
+    };
+    if (!cloud.user) {
+      box.innerHTML = `
+        <form class="account-form" data-login>
+          <p class="hint">${te('Salve suas configurações e presets na conta e use em qualquer computador ou celular. Sem e-mail: só nome de usuário e senha.')}</p>
+          <label>${te('Nome de usuário')}<input name="username" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" maxlength="20" required></label>
+          <label>${te('Senha')}<input name="password" type="password" autocomplete="current-password" minlength="6" required></label>
+          <div class="bar-inline"><button type="submit" class="primary">${te('Entrar')}</button><button type="button" data-signup>${te('Criar conta')}</button></div>
+          <p class="hint">${te('Guarde bem a senha: sem e-mail não dá para recuperar a conta.')}</p>
+          <p class="form-msg" data-msg></p>
+        </form>`;
+      const form = box.querySelector('form');
+      const vals = () => [form.username.value, form.password.value];
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+        run(() => cloud.signIn(...vals()), had => had ? t('Configurações da conta carregadas') : t('Conectado — configurações deste aparelho salvas na conta'));
+      });
+      box.querySelector('[data-signup]').addEventListener('click', () => {
+        form.password.autocomplete = 'new-password';
+        run(() => cloud.signUp(...vals()), t('Conta criada! Suas configurações agora ficam salvas nela.'));
+      });
+      return;
+    }
+    box.innerHTML = `
+      <p>${t('Conectado como <b>{user}</b>', { user: esc(cloud.user) })}</p>
+      <p class="hint" data-cloud-status></p>
+      <p class="hint">${te('Configurações, presets, rates, controles e melhores voltas ficam salvos na conta. Os gráficos ficam em cada aparelho.')}</p>
+      <div class="bar-inline"><button data-sync>${te('Sincronizar agora')}</button><button data-logout>${te('Sair da conta')}</button></div>
+      <details class="account-more"><summary>${te('Trocar senha ou excluir conta')}</summary>
+        <form class="bar-inline" data-pw><input type="password" name="password" autocomplete="new-password" minlength="6" required placeholder="${te('Nova senha')}"><button type="submit" class="small">${te('Trocar senha')}</button></form>
+        <button class="small danger" data-delete>${te('Excluir conta')}</button>
+      </details>
+      <p class="form-msg" data-msg></p>`;
+    this.renderAccountStatus();
+    box.querySelector('[data-sync]').addEventListener('click', () => run(() => cloud.syncNow(), t('Sincronizado ✓')));
+    box.querySelector('[data-logout]').addEventListener('click', () => { cloud.signOut(); this.toast(t('Você saiu da conta. As configurações continuam neste aparelho.'), 3500); this.renderAccount(); });
+    const pw = box.querySelector('[data-pw]');
+    pw.addEventListener('submit', e => { e.preventDefault(); run(() => cloud.changePassword(pw.password.value), t('Senha trocada')); });
+    box.querySelector('[data-delete]').addEventListener('click', () => {
+      if (!confirm(t('Excluir a conta "{user}" e tudo que está salvo nela? Não dá para desfazer.', { user: cloud.user }))) return;
+      run(() => cloud.deleteAccount(), t('Conta excluída'));
+    });
   }
 
   // ------------------------------------------------------------------ configurações
@@ -210,7 +350,7 @@ export class UI {
     for (const grp of tab.groups) {
       if (grp.when && !grp.when(data)) continue;
       const sec = document.createElement('section');
-      if (grp.title) sec.innerHTML = `<h3>${esc(grp.title)}</h3>`;
+      if (grp.title) sec.innerHTML = `<h3>${te(grp.title)}</h3>`;
       if (grp.custom) this['custom_' + grp.custom](sec);
       else for (const f of grp.fields) sec.appendChild(this.fieldRow(f));
       body.appendChild(sec);
@@ -223,13 +363,13 @@ export class UI {
     const row = document.createElement('div');
     row.className = 'row';
     const v = this.settings.get(f.path);
-    const help = f.help ? `<i class="help-i" title="${esc(f.help)}">?</i>` : '';
+    const help = f.help ? `<i class="help-i" title="${te(f.help)}">?</i>` : '';
     const reload = f.reload ? '<em class="reload-tag">↻</em>' : '';
     let control = '';
     if (f.type === 'range') control = `<input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${v}">`;
-    else if (f.type === 'select') control = `<select>${Object.entries(f.options).map(([k, l]) => `<option value="${esc(k)}" ${String(v) === String(k) ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
+    else if (f.type === 'select') control = `<select>${Object.entries(f.options).map(([k, l]) => `<option value="${esc(k)}" ${String(v) === String(k) ? 'selected' : ''}>${te(l)}</option>`).join('')}</select>`;
     else if (f.type === 'toggle') control = `<input type="checkbox" ${v ? 'checked' : ''}>`;
-    row.innerHTML = `<label class="lbl">${esc(f.label)} ${help}${reload}</label><div class="ctl">${control}<span class="val"></span></div>`;
+    row.innerHTML = `<label class="lbl">${te(f.label)} ${help}${reload}</label><div class="ctl">${control}<span class="val"></span></div>`;
     const input = row.querySelector('input,select');
     const val = row.querySelector('.val');
     const fmt = x => {
@@ -253,7 +393,7 @@ export class UI {
 
   onSettingChanged(path) {
     if (this.current !== 'settings') return;
-    const rerender = path === '*' || /preset$|layout$|rates\.type|input\.(throttle|yaw|pitch|roll|buttons|calib)/.test(path) || path === 'input' || path === 'graphics' || path === 'drone';
+    const rerender = path === '*' || path === 'presets' || /preset$|layout$|rates\.type|input\.(throttle|yaw|pitch|roll|buttons|calib)/.test(path) || path === 'input' || path === 'graphics' || path === 'drone';
     if (rerender) this.renderSettings();
     if (path.startsWith('rates')) this.drawRates?.();
     this.updateReloadBar();
@@ -263,16 +403,16 @@ export class UI {
     const bar = this.root.querySelector('.reload-bar');
     bar.hidden = !this.pendingReload;
     if (this.pendingReload) bar.querySelector('span').textContent = this.pendingReload === 'page'
-      ? 'Anti-aliasing só muda reiniciando o jogo.'
-      : 'Algumas mudanças gráficas precisam recarregar o cenário.';
+      ? t('Anti-aliasing só muda reiniciando o jogo.')
+      : t('Algumas mudanças gráficas precisam recarregar o cenário.');
   }
 
   resetTab() {
-    const map = { controls: ['input'], rates: ['rates'], physics: ['drone', 'world', 'battery'], fc: ['fc'], camera: ['camera'], graphics: ['graphics'], game: ['audio'] };
+    const map = { controls: ['input'], rates: ['rates'], physics: ['drone', 'world', 'battery'], fc: ['fc'], camera: ['camera'], graphics: ['graphics'], game: ['audio'], presets: [] };
     for (const s of map[this.tab] || []) this.settings.resetSection(s);
     if (this.tab === 'graphics') this.pendingReload = 'scene';
     this.renderSettings();
-    this.toast('Padrões restaurados');
+    this.toast(t('Padrões restaurados'));
   }
 
   // ---- widgets personalizados
@@ -287,12 +427,12 @@ export class UI {
       const fam = this.family();
       const nAxes = Math.max(8, this.game.input.gamepad?.axes.length || 0);
       const opts = Array.from({ length: nAxes }, (_, i) => `<option value="axis:${i}" ${m.type === 'axis' && m.index === i ? 'selected' : ''}>${esc(axisName(fam, i))}</option>`).join('')
-        + [6, 7].map(i => `<option value="button:${i}" ${m.type === 'button' && m.index === i ? 'selected' : ''}>Gatilho ${esc(buttonName(fam, i))}</option>`).join('');
+        + [6, 7].map(i => `<option value="button:${i}" ${m.type === 'button' && m.index === i ? 'selected' : ''}>${te('Gatilho {b}', { b: buttonName(fam, i) })}</option>`).join('');
       row.innerHTML = `<label class="lbl">${CHANNEL_NAMES[ch]}</label>
         <div class="ctl"><select>${opts}</select>
-        <label class="inv"><input type="checkbox" ${m.invert ? 'checked' : ''}> inverter</label>
+        <label class="inv"><input type="checkbox" ${m.invert ? 'checked' : ''}> ${te('inverter')}</label>
         <div class="meter"><div></div></div>
-        <button class="small" data-detect>Detectar</button></div>`;
+        <button class="small" data-detect>${te('Detectar')}</button></div>`;
       const [sel, inv] = [row.querySelector('select'), row.querySelector('input')];
       const update = () => {
         const [type, idx] = sel.value.split(':');
@@ -302,9 +442,9 @@ export class UI {
       inv.addEventListener('change', update);
       row.querySelector('[data-detect]').addEventListener('click', () => {
         const gp = this.game.input.findGamepad();
-        if (!gp) return this.toast('Conecte o controle e aperte um botão primeiro');
+        if (!gp) return this.toast(t('Conecte o controle e aperte um botão primeiro'));
         this.detect = { channel: ch, base: [...gp.axes], btnBase: gp.buttons.map(b => b.value) };
-        this.toast(`Mova o stick de ${CHANNEL_NAMES[ch]} para ${ch === 'throttle' || ch === 'pitch' ? 'CIMA' : 'a DIREITA'}…`, 4000);
+        this.toast(t(ch === 'throttle' || ch === 'pitch' ? 'Mova o stick de {ch} para CIMA…' : 'Mova o stick de {ch} para a DIREITA…', { ch: CHANNEL_NAMES[ch] }), 4000);
       });
       const bar = row.querySelector('.meter > div');
       this.live.push(() => {
@@ -323,13 +463,13 @@ export class UI {
     for (const [act, name] of Object.entries(ACTION_NAMES)) {
       const row = document.createElement('div');
       row.className = 'row';
-      row.innerHTML = `<label class="lbl">${name}</label><div class="ctl"><span class="btn-chip">${esc(bindingName(fam, b[act]))}</span><button class="small" data-set>Mudar</button><button class="small" data-clear title="Sem botão">×</button></div>`;
+      row.innerHTML = `<label class="lbl">${te(name)}</label><div class="ctl"><span class="btn-chip">${esc(bindingName(fam, b[act]))}</span><button class="small" data-set>${te('Mudar')}</button><button class="small" data-clear title="${te('Sem botão')}">×</button></div>`;
       row.querySelector('[data-set]').addEventListener('click', () => {
         const gp = this.game.input.findGamepad();
-        if (!gp) return this.toast('Conecte o controle e aperte um botão primeiro');
+        if (!gp) return this.toast(t('Conecte o controle e aperte um botão primeiro'));
         this.remap = { action: act, base: [...gp.axes] };
-        row.querySelector('.btn-chip').textContent = 'aperte…';
-        this.toast(`Aperte o botão (ou mude a chave do rádio) para "${name}"`, 4000);
+        row.querySelector('.btn-chip').textContent = t('aperte…');
+        this.toast(t('Aperte o botão (ou mude a chave do rádio) para "{name}"', { name: t(name) }), 4000);
       });
       row.querySelector('[data-clear]').addEventListener('click', () => {
         this.settings.set('input.buttons.' + act, -1);
@@ -343,7 +483,7 @@ export class UI {
   custom_speedControl(sec) {
     const div = document.createElement('div');
     div.innerHTML = `
-      <div class="row"><label class="lbl">Velocidade máxima <i class="help-i" title="Escolha a velocidade final e o jogo ajusta o passo da hélice (e, acima de certo ponto, o arrasto) para o drone chegar perto disso voando nivelado com throttle cheio e bateria cheia. Mergulhando ele passa disso; com a bateria acabando, fica abaixo.">?</i></label>
+      <div class="row"><label class="lbl">${te('Velocidade máxima')} <i class="help-i" title="${te('Escolha a velocidade final e o jogo ajusta o passo da hélice (e, acima de certo ponto, o arrasto) para o drone chegar perto disso voando nivelado com throttle cheio e bateria cheia. Mergulhando ele passa disso; com a bateria acabando, fica abaixo.')}">?</i></label>
         <div class="ctl"><input type="range" min="20" max="300" step="5"><span class="val"></span></div></div>
       <p class="hint" data-perf></p>`;
     const input = div.querySelector('input'), val = div.querySelector('.val'), info = div.querySelector('[data-perf]');
@@ -357,7 +497,11 @@ export class UI {
       input.value = Math.round(v / 5) * 5;
       val.textContent = `${Math.round(v)} km/h`;
       const hov = hoverThrottle(d, w.gravity, this.settings.data.fc.motorIdle);
-      info.textContent = `Empuxo/peso ${thrustToWeight(d, w.gravity).toFixed(1)}:1 · paira com ${hov == null ? '— (não decola!)' : Math.round(hov * 100) + '% de throttle'} · passo da hélice ${Math.round(d.propPitchSpeed)} m/s`;
+      info.textContent = t('Empuxo/peso {tw}:1 · paira com {hov} · passo da hélice {pitch} m/s', {
+        tw: thrustToWeight(d, w.gravity).toFixed(1),
+        hov: hov == null ? t('— (não decola!)') : t('{p}% de throttle', { p: Math.round(hov * 100) }),
+        pitch: Math.round(d.propPitchSpeed),
+      });
     };
     input.addEventListener('input', () => { dragging = true; val.textContent = `${input.value} km/h`; });
     input.addEventListener('change', () => {
@@ -368,7 +512,7 @@ export class UI {
         for (const k of ['cdaFront', 'cdaTop', 'cdaSide', 'rotorDrag']) this.settings.set('drone.' + k, d[k] * r.dragMul, { silent: true });
       }
       this.settings.set('drone.propPitchSpeed', Math.round(r.pitchSpeed * 10) / 10);
-      if (!r.reached) this.toast(`Para passar de ${Math.round(estimateTopSpeed(this.settings.data.drone, w) * 3.6)} km/h, aumente a Potência`, 4000);
+      if (!r.reached) this.toast(t('Para passar de {v} km/h, aumente a Potência', { v: Math.round(estimateTopSpeed(this.settings.data.drone, w) * 3.6) }), 4000);
       sig = '';
       this.renderSettings();
     });
@@ -380,16 +524,16 @@ export class UI {
   custom_hapticsTest(sec) {
     const div = document.createElement('div');
     div.className = 'bar-inline';
-    div.innerHTML = '<button class="small" data-test>Testar vibração</button><span class="hint" data-hstatus></span>';
+    div.innerHTML = `<button class="small" data-test>${te('Testar vibração')}</button><span class="hint" data-hstatus></span>`;
     const status = div.querySelector('[data-hstatus]');
     div.querySelector('[data-test]').addEventListener('click', () => {
       const ok = this.game.haptics.play(1, 1, 450, { triggers: 1, force: true });
-      if (!ok) this.toast('Este controle/navegador não aceita vibração');
+      if (!ok) this.toast(t('Este controle/navegador não aceita vibração'));
     });
     this.live.push(() => {
       const gp = this.game.input.gamepad;
       const kind = hapticsSupport(gp);
-      const txt = !gp ? 'Nenhum controle conectado.' : kind ? `Suporte: ${HAPTICS_LABEL[kind]}.` : 'Este controle/navegador não informa suporte a vibração (rádios FPV não vibram; no Firefox costuma vir desligado).';
+      const txt = !gp ? t('Nenhum controle conectado.') : kind ? t('Suporte: {kind}.', { kind: t(HAPTICS_LABEL[kind]) }) : t('Este controle/navegador não informa suporte a vibração (rádios FPV não vibram; no Firefox costuma vir desligado).');
       if (status.textContent !== txt) status.textContent = txt;
     });
     sec.appendChild(div);
@@ -401,30 +545,30 @@ export class UI {
     const pads = this.game.input.listGamepads();
     const want = this.settings.get('input.gamepadIndex');
     div.innerHTML = `
-      <div class="row"><label class="lbl">Controle usado</label><div class="ctl"><select data-pad-sel>
-        <option value="-1">Automático (o último que você mexer)</option>
+      <div class="row"><label class="lbl">${te('Controle usado')}</label><div class="ctl"><select data-pad-sel>
+        <option value="-1">${te('Automático (o último que você mexer)')}</option>
         ${pads.map(p => `<option value="${p.index}" ${want === p.index ? 'selected' : ''}>${esc(p.id.slice(0, 60))}</option>`).join('')}
       </select></div></div>
       <p class="hint" data-pad-info></p>
       <div class="axes"></div><div class="btns"></div>
-      <div class="bar-inline"><button class="small" data-cal>Calibrar sticks</button><button class="small" data-cal-reset>Zerar calibração</button></div>
+      <div class="bar-inline"><button class="small" data-cal>${te('Calibrar sticks')}</button><button class="small" data-cal-reset>${te('Zerar calibração')}</button></div>
       <p class="hint" data-cal-msg></p>`;
     div.querySelector('[data-pad-sel]').addEventListener('change', e => this.settings.set('input.gamepadIndex', Number(e.target.value)));
     div.querySelector('[data-cal]').addEventListener('click', () => {
-      if (!this.game.input.findGamepad()) return this.toast('Conecte o controle primeiro');
+      if (!this.game.input.findGamepad()) return this.toast(t('Conecte o controle primeiro'));
       this.calib = { phase: 'range', t: 0, min: [1, 1, 1, 1], max: [-1, -1, -1, -1], center: [0, 0, 0, 0], n: 0 };
     });
     div.querySelector('[data-cal-reset]').addEventListener('click', () => {
       this.settings.set('input.calib', {});
-      this.toast('Calibração zerada');
+      this.toast(t('Calibração zerada'));
     });
     const axesEl = div.querySelector('.axes'), btnsEl = div.querySelector('.btns'), info = div.querySelector('[data-pad-info]'), calMsg = div.querySelector('[data-cal-msg]');
     let built = 0;
     this.live.push(() => {
       const gp = this.game.input.findGamepad();
-      if (!gp) { info.textContent = 'Nenhum controle detectado. Conecte via USB e aperte qualquer botão.'; return; }
+      if (!gp) { info.textContent = t('Nenhum controle detectado. Conecte via USB e aperte qualquer botão.'); return; }
       const pi = this.game.input.padInfo;
-      const txt = `${pi?.model || 'Controle'} · ${gp.mapping === 'standard' ? 'mapeamento padrão' : 'mapeamento próprio — confira os canais com "Detectar"'} · ${gp.id}`;
+      const txt = `${pi?.model || t('Controle')} · ${gp.mapping === 'standard' ? t('mapeamento padrão') : t('mapeamento próprio — confira os canais com "Detectar"')} · ${gp.id}`;
       if (info.textContent !== txt) info.textContent = txt;
       const key = gp.id + gp.axes.length + ':' + gp.buttons.length;
       if (built !== key) {
@@ -444,11 +588,11 @@ export class UI {
       if (this.calib) {
         const c = this.calib;
         if (c.phase === 'range') {
-          calMsg.textContent = 'Gire os DOIS sticks em círculos, até o limite, por 4 segundos…';
+          calMsg.textContent = t('Gire os DOIS sticks em círculos, até o limite, por 4 segundos…');
           for (let i = 0; i < 4; i++) { c.min[i] = Math.min(c.min[i], gp.axes[i] ?? 0); c.max[i] = Math.max(c.max[i], gp.axes[i] ?? 0); }
           if (c.t > 4) { c.phase = 'center'; c.t = 0; }
         } else {
-          calMsg.textContent = 'Agora SOLTE os sticks…';
+          calMsg.textContent = t('Agora SOLTE os sticks…');
           if (c.t > 1) { for (let i = 0; i < 4; i++) c.center[i] += gp.axes[i] ?? 0; c.n++; }
           if (c.t > 2.2) {
             const cal = {};
@@ -458,7 +602,7 @@ export class UI {
             }
             this.settings.set('input.calib', cal);
             this.calib = null;
-            calMsg.textContent = 'Calibração salva ✓';
+            calMsg.textContent = t('Calibração salva ✓');
           }
         }
       }
@@ -491,20 +635,55 @@ export class UI {
         g.stroke();
       }
       g.fillStyle = 'rgba(255,255,255,0.5)'; g.font = '12px sans-serif';
-      g.fillText('°/s vs. deflexão do stick', 8, 16);
-      maxEl.innerHTML = axes.map(([a, col], i) => `<span style="color:${col}">${a} máx ${Math.round(maxes[i])}°/s</span>`).join(' · ');
+      g.fillText(t('°/s vs. deflexão do stick'), 8, 16);
+      maxEl.innerHTML = axes.map(([a, col], i) => `<span style="color:${col}">${te('{axis} máx {v}°/s', { axis: a, v: Math.round(maxes[i]) })}</span>`).join(' · ');
     };
     requestAnimationFrame(() => this.drawRates());
+  }
+
+  custom_userPresets(sec) {
+    const list = this.settings.data.presets || [];
+    const cloud = this.game.cloud;
+    const div = document.createElement('div');
+    div.className = 'presets';
+    const where = cloud?.user ? t('Ficam salvos na sua conta ({user}).', { user: cloud.user })
+      : cloud?.configured() ? t('Ficam salvos neste navegador. Entre numa conta (menu principal) para levar para outros aparelhos.')
+        : t('Ficam salvos neste navegador.');
+    div.innerHTML = `
+      <p class="hint">${te('Um preset guarda o drone (física e bateria), os rates, a controladora (PIDs e modo de voo) e a câmera. {where}', { where })}</p>
+      <form class="bar-inline" data-new><input type="text" name="name" maxlength="40" required placeholder="${te('Nome (ex.: meu 5 polegadas)')}"><button class="small primary" type="submit">${te('Salvar configuração atual')}</button></form>
+      ${list.length ? list.map((p, i) => `
+        <div class="row"><label class="lbl">${esc(p.name)} <span class="hint">${esc(new Date(p.savedAt).toLocaleDateString(getLang() === 'en' ? 'en' : 'pt-BR'))}</span></label>
+          <div class="ctl"><button class="small" data-load="${i}">${te('Carregar')}</button><button class="small danger" data-del="${i}">${te('Excluir')}</button></div></div>`).join('')
+        : `<p class="hint">${te('Nenhum preset salvo ainda.')}</p>`}`;
+    const form = div.querySelector('[data-new]');
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const name = form.name.value.trim();
+      if (!name) return;
+      const existed = list.some(p => p.name === name);
+      this.settings.savePreset(name);
+      this.toast(existed ? t('Preset "{name}" atualizado', { name }) : t('Preset "{name}" salvo', { name }));
+    });
+    for (const b of div.querySelectorAll('[data-load]')) b.addEventListener('click', () => {
+      const p = list[Number(b.dataset.load)];
+      if (this.settings.loadPreset(p.name)) this.toast(t('Preset "{name}" carregado', { name: p.name }));
+    });
+    for (const b of div.querySelectorAll('[data-del]')) b.addEventListener('click', () => {
+      const p = list[Number(b.dataset.del)];
+      if (confirm(t('Excluir o preset "{name}"?', { name: p.name }))) this.settings.deletePreset(p.name);
+    });
+    sec.appendChild(div);
   }
 
   custom_dataTools(sec) {
     const div = document.createElement('div');
     div.className = 'data-tools';
     div.innerHTML = `
-      <div class="bar-inline"><button class="small" data-exp>Exportar configurações (.json)</button>
-      <button class="small" data-imp>Importar do texto abaixo</button>
-      <button class="small danger" data-all>Restaurar TUDO</button></div>
-      <textarea rows="4" placeholder="Cole aqui um JSON de configurações para importar"></textarea>`;
+      <div class="bar-inline"><button class="small" data-exp>${te('Exportar configurações (.json)')}</button>
+      <button class="small" data-imp>${te('Importar do texto abaixo')}</button>
+      <button class="small danger" data-all>${te('Restaurar TUDO')}</button></div>
+      <textarea rows="4" placeholder="${te('Cole aqui um JSON de configurações para importar')}"></textarea>`;
     div.querySelector('[data-exp]').addEventListener('click', () => {
       const blob = new Blob([this.settings.exportJSON()], { type: 'application/json' });
       const a = document.createElement('a');
@@ -514,11 +693,11 @@ export class UI {
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     });
     div.querySelector('[data-imp]').addEventListener('click', () => {
-      try { this.settings.importJSON(div.querySelector('textarea').value); this.toast('Configurações importadas'); this.pendingReload = 'scene'; this.renderSettings(); }
-      catch { this.toast('JSON inválido'); }
+      try { this.settings.importJSON(div.querySelector('textarea').value); this.toast(t('Configurações importadas')); this.pendingReload = 'scene'; this.renderSettings(); }
+      catch { this.toast(t('JSON inválido')); }
     });
     div.querySelector('[data-all]').addEventListener('click', () => {
-      if (!confirm('Restaurar todas as configurações para o padrão?')) return;
+      if (!confirm(t('Restaurar todas as configurações para o padrão?'))) return;
       this.settings.resetAll();
       this.pendingReload = 'scene';
       this.renderSettings();
@@ -538,13 +717,13 @@ export class UI {
       gp.axes.forEach((a, i) => { const dv = a - (d.base[i] ?? 0); if (Math.abs(dv) > 0.55 && Math.abs(dv) > Math.abs(bestV)) { best = i; bestV = dv; } });
       if (best >= 0) {
         this.settings.set('input.' + d.channel, { type: 'axis', index: best, invert: bestV < 0 });
-        this.toast(`${CHANNEL_NAMES[d.channel]} → ${axisName(this.family(), best)}${bestV < 0 ? ' (invertido)' : ''}`);
+        this.toast(`${CHANNEL_NAMES[d.channel]} → ${axisName(this.family(), best)}${bestV < 0 ? t(' (invertido)') : ''}`);
         this.detect = null;
       } else {
         for (const i of [6, 7]) {
           if ((gp.buttons[i]?.value ?? 0) - (d.btnBase[i] ?? 0) > 0.6) {
             this.settings.set('input.' + d.channel, { type: 'button', index: i, invert: false });
-            this.toast(`${CHANNEL_NAMES[d.channel]} → gatilho ${buttonName(this.family(), i)}`);
+            this.toast(`${CHANNEL_NAMES[d.channel]} → ${t('gatilho {b}', { b: buttonName(this.family(), i) })}`);
             this.detect = null;
             break;
           }
@@ -562,7 +741,7 @@ export class UI {
       }
       if (b != null) {
         this.settings.set('input.buttons.' + this.remap.action, b);
-        this.toast(`${ACTION_NAMES[this.remap.action]} → ${bindingName(this.family(), b)}`);
+        this.toast(`${t(ACTION_NAMES[this.remap.action])} → ${bindingName(this.family(), b)}`);
         this.remap = null;
         this.renderSettings();
       }

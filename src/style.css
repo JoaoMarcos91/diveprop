@@ -35,7 +35,10 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 .osd-stick.l { left: 3vh; } .osd-stick.r { right: 3vh; }
 .osd-stick i { position: absolute; left: 50%; top: 50%; width: 0.9vh; height: 0.9vh; margin: -0.45vh; border-radius: 50%; background: #fff; will-change: transform; }
 .osd-stick i { left: calc(50% - 0.45vh); top: calc(50% - 0.45vh); margin: 0; transform-origin: center; }
-#fatal { position: fixed; inset: 20% 10% auto; background: #300; color: #fff; padding: 20px; border-radius: 10px; white-space: pre-wrap; z-index: 50; }
+#fatal { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(520px, calc(100vw - 32px)); max-height: calc(100vh - 32px); overflow: auto; background: var(--panel); border: 1px solid var(--line); color: var(--text); padding: 22px 24px; border-radius: 16px; z-index: 50; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+#fatal[hidden] { display: none; }
+#fatal ul { padding-left: 20px; margin: 8px 0 14px; } #fatal li { margin: 4px 0; }
+#fatal summary { color: var(--muted); font-size: 13px; cursor: pointer; } #fatal code { display: block; margin-top: 6px; color: var(--muted); font-size: 12px; white-space: pre-wrap; }
 #fs { position: fixed; right: 12px; top: 12px; z-index: 30; width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--line); background: rgba(0,0,0,0.35); color: #fff; font-size: 18px; cursor: pointer; opacity: 0.35; }
 #fs:hover { opacity: 1; }
 
@@ -61,6 +64,8 @@ button.small { padding: 6px 10px; font-size: 13px; border-radius: 8px; }
 button.danger { color: var(--danger); }
 .menu-list button { font-size: 17px; padding: 14px 18px; }
 .pad-status { margin-top: 18px; font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 8px; }
+.menu-foot { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12px; }
+.menu-foot a { color: var(--muted); text-decoration: none; } .menu-foot a:hover { color: var(--text); }
 .dot { width: 9px; height: 9px; border-radius: 50%; background: #666; flex: none; }
 .dot.ok { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
 .hint { color: var(--muted); font-size: 13px; }
@@ -137,3 +142,57 @@ section { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
   .help { grid-template-columns: 1fr; }
   h1 { font-size: 40px; }
 }
+
+/* ---------------------------------------------------------------- controles na tela (toque) */
+#touch { position: fixed; inset: 0; z-index: 10; pointer-events: none; display: none; --ts: 1; -webkit-touch-callout: none; }
+#touch.on { display: block; }
+#touch .t-zone { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 2vmin); width: calc(46vmin * var(--ts)); height: calc(46vmin * var(--ts));
+  display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: auto; touch-action: none; }
+#touch .t-zone.l { left: calc(env(safe-area-inset-left) + 2vmin); }
+#touch .t-zone.r { right: calc(env(safe-area-inset-right) + 2vmin); }
+#touch .t-base { position: relative; width: 72%; height: 72%; border-radius: 24%; border: 2px solid rgba(255,255,255,0.4); background: rgba(0,0,0,0.22); }
+#touch .t-knob { position: absolute; left: 32%; top: 32%; width: 36%; height: 36%; border-radius: 50%; background: rgba(255,255,255,0.55); border: 2px solid rgba(255,255,255,0.85); will-change: transform; }
+#touch .t-label { margin-top: 7vmin; font: 600 2.6vmin/1 -apple-system, system-ui, sans-serif; color: rgba(255,255,255,0.55); text-shadow: 0 1px 2px #000; }
+#touch .t-btns { position: absolute; top: 24%; display: flex; flex-direction: column; gap: 2.4vmin; pointer-events: auto; }
+#touch .t-btns.l { left: calc(env(safe-area-inset-left) + 2vmin); }
+#touch .t-btns.r { right: calc(env(safe-area-inset-right) + 2vmin); align-items: flex-end; }
+#touch button { min-width: calc(17vmin * var(--ts)); padding: calc(2.6vmin * var(--ts)) 3vmin; font: 700 calc(3.4vmin * var(--ts))/1 -apple-system, system-ui, sans-serif; letter-spacing: 0.04em;
+  color: #fff; background: rgba(0,0,0,0.38); border: 1.5px solid rgba(255,255,255,0.45); border-radius: 2.4vmin; touch-action: none; -webkit-tap-highlight-color: transparent; }
+#touch button.down { background: rgba(255,204,51,0.55); color: #1a1400; }
+#touch .t-arm { border-color: #ffd24a; color: #ffd24a; }
+#touch .t-arm.armed { border-color: #7dff7a; color: #7dff7a; }
+#touch .t-pause { position: absolute; top: calc(env(safe-area-inset-top) + 2vmin); left: 50%; transform: translateX(-50%); min-width: 0; pointer-events: auto; }
+#touch .t-rotate { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(8,10,14,0.94); color: #fff; pointer-events: auto;
+  flex-direction: column; align-items: center; justify-content: center; text-align: center; font: 600 18px/1.4 -apple-system, system-ui, sans-serif; }
+#touch .t-rotate b { font-size: 64px; color: var(--accent); }
+@media (orientation: portrait) { #touch.on .t-rotate { display: flex; } }
+/* o OSD abre espaço para os sticks */
+body.touch-on .osd-stick { display: none !important; }
+body.touch-on .osd-bl { left: calc(50vmin * var(--ts, 1)); }
+body.touch-on .osd-br { right: calc(50vmin * var(--ts, 1)); }
+html, body { touch-action: manipulation; overscroll-behavior: none; }
+#game { touch-action: none; }
+/* celular deitado (tela baixa): menus mais compactos */
+@media (max-height: 500px) {
+  .screen { padding: 16px 18px; max-height: calc(100vh - 16px); }
+  h1 { font-size: 38px; }
+  .brand p { margin-bottom: 12px; }
+  .menu-list { gap: 8px; }
+  .menu-list button { padding: 10px 16px; font-size: 16px; }
+  .pad-status { margin-top: 10px; }
+  .cards { grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 10px; }
+  .card-art { height: 74px; }
+  .card-body p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+/* conta e presets do jogador */
+.account-form { display: flex; flex-direction: column; gap: 12px; }
+.account-form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: #cfd6de; }
+.account-form input, .account-more input, .presets input[type=text] { font: inherit; color: var(--text); background: #1a1f26; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; min-width: 0; }
+.presets form input { flex: 1; }
+.form-msg { min-height: 1.2em; margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+.form-msg.err, .hint.err { color: var(--danger); }
+.account-more { margin-top: 14px; }
+.account-more summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+.account-more form { margin-top: 10px; }
+.account-more input { flex: 1; }

@@ -7,9 +7,12 @@
 import '../src/style.css';
 import { Settings } from '../src/settings.js';
 import { UI } from '../src/ui.js';
+import { setLang, resolveLang } from '../src/i18n.js';
+import { Cloud } from '../src/cloud.js';
 const settings = new Settings();
+setLang(resolveLang(new URLSearchParams(location.search).get('lang') || settings.get('game.lang')));
 const game = {
-  settings, state: 'menu',
+  settings, state: 'menu', cloud: new Cloud(settings),
   input: { gamepad: null, padInfo: null, findGamepad: () => null, listGamepads: () => [], sticks: { throttle: 0.3, yaw: 0.2, pitch: -0.4, roll: 0.6 }, rawButtonsPressed: [] },
   audio: { ensure() {} },
   haptics: { play: () => false },

@@ -25,7 +25,7 @@ export function startDev(game) {
     const d = game.drone, p = d?.position(new THREE.Vector3());
     const info = game.r.renderer.info;
     return {
-      state: game.state, scene: game.sceneDef?.id, fps: Math.round(game.fps * 10) / 10, scale: game.r.scale,
+      state: game.state, scene: game.sceneDef?.id, touch: game.touch?.visible, src: game.input.lastSource, fps: Math.round(game.fps * 10) / 10, scale: game.r.scale,
       frameMs: +game.stats.frameMs.toFixed(2), phys: game.stats.phys, renderMs: +(game.stats.renderMs||0).toFixed(2), osdMs: +(game.stats.osdMs||0).toFixed(2), physMs: +game.stats.physMs.toFixed(2), steps: game.stats.steps,
       calls: info.render.calls, programs: info.programs?.length, tris: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures,
       drone: d && { pos: p.toArray().map(v => +v.toFixed(2)), speed: +d.speed().toFixed(2), armed: d.armed, crashed: d.crashed, motors: d.motor.map(m => +m.toFixed(3)), volt: +d.voltage.toFixed(2), ground: +d.groundDist.toFixed(2) },
@@ -94,6 +94,36 @@ export function startDev(game) {
         if (document.hidden) { game.frame(performance.now()); }
         break;
       case 'stats': log('stats', stats()); break;
+      // formulários (conta, presets): preencher, clicar, enviar
+      case 'fill': { const el = document.querySelector(cmd.sel); if (el) { el.value = cmd.value; el.dispatchEvent(new Event('input', { bubbles: true })); } else log('error', { msg: 'fill: nada em ' + cmd.sel }); break; }
+      case 'click': { const el = document.querySelector(cmd.sel); if (el) el.click(); else log('error', { msg: 'click: nada em ' + cmd.sel }); break; }
+      case 'submit': { const f = document.querySelector(cmd.sel); if (f) f.requestSubmit(); else log('error', { msg: 'submit: nada em ' + cmd.sel }); break; }
+      case 'get': log('get', { path: cmd.path, value: cmd.path === 'presets' ? game.settings.data.presets.map(p => p.name) : game.settings.get(cmd.path), user: game.cloud?.user, status: game.cloud?.status }); break;
+      case 'wipe': { // "aparelho novo": configurações de fábrica, inclusive presets
+        const { DEFAULTS } = await import('./settings.js');
+        game.settings.data = structuredClone(DEFAULTS); game.settings.save(); game.settings.emitAll(); break;
+      }
+      case 'call': await game[cmd.obj][cmd.op](...(cmd.args || [])); break; // ex.: { obj: 'cloud', op: 'deleteAccount' }
+      case 'dom': log('dom', { sel: cmd.sel, text: (document.querySelector(cmd.sel)?.innerText || '').replace(/\s+/g, ' ').trim().slice(0, cmd.max || 600) }); break;
+      case 'i18n': {
+        // troca o idioma, passa por todas as telas e abas e lista os textos sem tradução
+        const [{ missingKeys }, { SCHEMA }] = await Promise.all([import('./i18n.js'), import('./settings.js')]);
+        game.settings.set('game.lang', cmd.lang || 'en');
+        for (const scr of ['main', 'scenes', 'pause', 'help', 'loading']) game.ui.show(scr, { push: false });
+        for (const tab of SCHEMA) { game.ui.tab = tab.id; game.ui.show('settings', { push: false }); }
+        game.ui.show(cmd.end || 'main', { push: false });
+        log('i18n', { lang: cmd.lang || 'en', missing: missingKeys(), htmlLang: document.documentElement.lang, title: document.title });
+        break;
+      }
+      case 'pointer': {
+        // toque sintético num elemento (controles na tela); fx/fy = posição relativa −1…1 dentro dele
+        const el = document.querySelector(cmd.sel);
+        if (!el) { log('error', { msg: 'pointer: nada em ' + cmd.sel }); break; }
+        const r = el.getBoundingClientRect();
+        const x = r.left + r.width * (0.5 + (cmd.fx || 0) / 2), y = r.top + r.height * (0.5 + (cmd.fy || 0) / 2);
+        el.dispatchEvent(new PointerEvent(cmd.type || 'pointerdown', { pointerId: cmd.id ?? 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: y, bubbles: true, cancelable: true }));
+        break;
+      }
       case 'mockpad': {
         // controles simulados para testar mapeamentos e vibração sem hardware
         if (!window.__realGetGamepads) window.__realGetGamepads = navigator.getGamepads.bind(navigator);

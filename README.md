@@ -1,10 +1,20 @@
 # FPVsim
 
 Simulador de drone FPV em 3D que roda direto no navegador, com física realista, 9 cenários
-e tudo configurável. Joga com controle de videogame (PS3, PS4, PS5, Xbox, Switch) ou com
-rádio FPV de verdade. 100% gratuito.
+e tudo configurável. Joga com controle de videogame (PS3, PS4, PS5, Xbox, Switch), com
+rádio FPV de verdade ou com os sticks na tela do celular. 100% gratuito, sem instalar nada.
 
 ### ▶ Jogar: **https://joaomarcos91.github.io/fpvsim/**
+
+> **English:** FPVsim is a free FPV drone simulator that runs in your browser — realistic
+> physics, 9 maps (abandoned factory and power plant with hollow chimneys and a ladder-dive
+> stairwell, mountains, race track, beach, quarry, indoor gym…) and every parameter tunable.
+> Play with a gamepad (PS3/PS4/PS5, Xbox, Switch), a real FPV radio over USB (EdgeTX/OpenTX
+> joystick mode) or the on-screen sticks on your phone. The game is in English whenever your
+> browser isn't set to Portuguese (or switch it on the main menu / Settings → Audio / Game).
+> Mode 2 controls: left stick throttle/yaw, right stick pitch/roll · **R1/RB** arm ·
+> **△/Y** reset · **□/X** camera · **L1/LB** flight mode (start in Angle) · hold **✕/A** for
+> turtle mode. Keyboard: W/S throttle, A/D yaw, arrows pitch/roll, Space to arm.
 
 ![Campos e Árvores](docs/fields.jpg)
 
@@ -15,6 +25,11 @@ rádio FPV de verdade. 100% gratuito.
 2. Conecte o controle (USB ou Bluetooth) e **aperte qualquer botão** — o navegador só mostra o
    controle depois disso.
 3. Escolha **Voar → cenário**, abaixe o throttle e aperte **R1** (ou **RB**) para armar.
+
+**No celular ou tablet:** abra o link, deite o aparelho e use os sticks na tela — o esquerdo é
+throttle (fica onde você soltar) e yaw, o direito é pitch e roll; toque em **ARMAR** com o
+throttle embaixo. O celular já começa no modo Angle e no gráfico Baixo. No Android,
+"Adicionar à tela inicial" abre o jogo em tela cheia. Um controle Bluetooth também funciona.
 
 Nunca voou FPV? Aperte **L1** para trocar para o modo **Angle**, que nivela o drone sozinho.
 No modo **Acro** (padrão) o drone fica no ângulo em que você deixar, como os drones reais
@@ -41,6 +56,9 @@ de freestyle.
 
 Teclado (reserva): W/S throttle, A/D yaw, setas pitch/roll, Espaço arma, R reset,
 C câmera, M modo, T turtle, Esc pausa, `[` `]` uptilt, `,` `.` FOV.
+
+Tela de toque: sticks e botões ARMAR, MODO, CÂM, RESET e pausa (Configurações → Controle →
+Controles na tela: automático, sempre ou desligado, e tamanho).
 
 O stick de um controle de videogame volta ao centro sozinho, então por padrão o centro é
 50% de throttle (segure o stick). Em **Configurações → Controle** dá para usar só a metade
@@ -85,7 +103,14 @@ Ajuste ou teste em **Configurações → Controle → Vibração**. Rádios FPV 
 | ![Pedreira](docs/quarry.jpg) **Pedreira** — cava em bancadas com lago no fundo, duas torres de resfriamento ocas de ~90 m (entre por baixo, entre os pilares, e saia pelo topo), britador, esteiras e caminhões. | ![Ginásio](docs/gym.jpg) **Ginásio Indoor** — pista de tiny whoop cronometrada, arquibancada, cordas e cestas de basquete (passe pelo aro!). |
 | ![Usina](docs/plant.jpg) **Usina Abandonada** — duas chaminés ocas de 85 e 100 m, galeria da esteira para voar por dentro, caldeira e salão das turbinas. | ![Poço da escada](docs/stairwell.jpg) **Ladder dive** — torre de escada de 20 andares com poço aberto: entre pelo telhado, mergulhe pelo meio da escada e saia pela porta do térreo. |
 
-## O que dá para configurar
+## Conta (opcional · em breve)
+
+Assim que as contas forem ativadas no site, o menu principal ganha **Entrar / criar conta**: só nome de usuário e senha — sem e-mail e sem
+confirmação. Com a conta, as configurações, os **presets** (Configurações → Presets), os
+mapeamentos de controle e as melhores voltas ficam salvos na nuvem e voltam em qualquer
+computador ou celular. Os gráficos ficam em cada aparelho. Sem e-mail não há "esqueci a senha":
+guarde a senha. Sem conta, tudo continua salvo no navegador.
+
 
 - **Potência e velocidade máxima** (aba Física): "Potência" multiplica a força dos motores
   (mostra a relação empuxo/peso e o throttle de hover); "Velocidade máxima" você escolhe em
@@ -105,6 +130,10 @@ Ajuste ou teste em **Configurações → Controle → Vibração**. Rádios FPV 
 - **Gráficos**: presets Muito baixo → Ultra, escala de resolução, resolução dinâmica,
   limite de FPS, distância de visão, sombras, materiais PBR, normal maps, vegetação,
   grama, anisotropia, MSAA.
+
+- **Presets próprios**: salve o setup atual (drone, bateria, rates, PIDs, câmera) com um nome
+  e carregue quando quiser (Configurações → Presets).
+- **Idioma**: português ou inglês (automático pelo idioma do navegador; botão no menu principal).
 
 Tudo fica salvo no navegador e pode ser exportado/importado em JSON (aba Áudio/Jogo).
 
@@ -133,20 +162,47 @@ npm run dev
 `Iniciar FPVsim.command`, que faz tudo isso e abre o Safari.
 
 - `npm run deploy` gera o build e publica no GitHub Pages (branch `gh-pages`).
+- `node scripts/i18n-keys.mjs` lista os textos que ainda não têm tradução em inglês.
+
+### Ativar as contas (Firebase, grátis)
+
+As contas usam um projeto do Firebase no plano grátis (Spark), pela API REST — sem
+biblioteca extra. Uma vez só:
+
+1. Em <https://console.firebase.google.com>, **Adicionar projeto** (o Google Analytics pode
+   ficar desligado).
+2. **Criação → Authentication → Vamos começar → E-mail/senha → Ativar** (deixe "Link do
+   e-mail" desligado) e salve.
+3. **Criação → Firestore Database → Criar banco de dados**, modo de produção, região
+   `southamerica-east1` (São Paulo). Na aba **Regras**, cole o conteúdo de
+   [`firestore.rules`](firestore.rules) e **Publicar**.
+4. **Configurações do projeto → Geral → Seus apps → Web (`</>`)**, registre o app (sem
+   Hosting) e copie `apiKey` e `projectId` para [`src/cloud-config.js`](src/cloud-config.js).
+5. Recomendado: no Google Cloud Console → APIs e serviços → Credenciais, restrinja a chave
+   de API aos referenciadores `https://joaomarcos91.github.io/*` e `http://127.0.0.1:5173/*`.
+
+O nome de usuário vira um e-mail que não existe (`joao@fpvsim.example.com` — o domínio
+`example.com` é reservado e nunca recebe mensagens), então nenhum e-mail é enviado. Para
+testar sem Firebase: `http://127.0.0.1:5173/?dev=1&cloud=mock` usa um servidor de mentira
+guardado no próprio navegador.
 - `http://127.0.0.1:5173/?dev=1` liga um canal de testes (`src/dev.js`) que aceita comandos
   em `.devreports/cmd.json`: carregar cenário, piloto automático, controles simulados,
   screenshots e benchmarks.
-- `tests/ui.html` mostra só os menus (funciona até em navegador sem GPU).
+- `tests/ui.html` mostra só os menus e `tests/touch.html` só os controles de toque (funcionam
+  até em navegador sem GPU). `?touch=1` força os controles de toque no computador.
 
 ```
 src/main.js        laço do jogo, carregamento de cenários, perfis de controle
 src/drone.js       física: rates → PID → mixer/airmode → motores → aerodinâmica → Rapier
 src/rates.js       fórmulas de rates do Betaflight
-src/input.js       Gamepad API (controles e rádios, chaves) + teclado
+src/input.js       Gamepad API (controles e rádios, chaves) + teclado + toque
+src/touch.js       sticks e botões na tela (celular/tablet)
 src/controllers.js identificação do controle, nomes dos botões, suporte a vibração
 src/haptics.js     vibração (dual-rumble, trigger-rumble, pulse)
 src/settings.js    padrões, presets, layouts, schema da tela de configurações
 src/ui.js          menus, configurações, calibração, remapeamento
+src/i18n.js        idiomas: t('texto em português') → inglês (src/i18n-en.js)
+src/cloud.js       contas (usuário e senha) e sincronização na nuvem (Firebase REST)
 src/osd.js         OSD estilo Betaflight
 src/render.js      renderizador, pós-processamento FPV, resolução dinâmica
 src/assets.js      materiais (texturas CC0) e céus HDRI

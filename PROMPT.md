@@ -67,6 +67,18 @@ Simular um quadricóptero em X com passo fixo (padrão 500 Hz, configurável):
 - FPV com **ângulo de inclinação (uptilt)**, **FOV**, **fisheye** (distorção barrel em pós-processo), efeito **analógico** (ruído, scanlines, perda de sinal por distância/obstáculos) ou digital limpo.
 - Terceira pessoa (distância/altura/suavização) e linha de visada (piloto no chão).
 
+## Divulgação e celular
+
+- Prévia do link (Open Graph/Twitter), ícones e manifesto para "adicionar à tela inicial".
+- Celular/tablet: sticks e botões na tela (Pointer Events), aviso para deitar o aparelho, primeira
+  visita no gráfico Baixo e modo Angle; placa de vídeo forte começa no Alto.
+- Texturas 1K recomprimidas (cor 4:2:0 q80, normal/ARM 4:4:4 q85): ~⅓ do download.
+- Conta opcional só com usuário e senha (sem e-mail/confirmação) via Firebase REST (Auth +
+  Firestore, plano grátis): sincroniza configurações, presets do jogador, controles e voltas;
+  gráficos ficam por aparelho. `?cloud=mock` testa sem servidor.
+- Português e inglês: o texto em português do código é a chave (`t('Voar')` → "Fly"); idioma
+  automático pelo navegador, botão no menu e opção em Configurações.
+
 ## Cenários (9)
 
 1. **Fábrica Abandonada** — galpão de tijolos com janelas quebradas, telhado com buracos, treliças, mezanino, contêineres, tanques, entulho, mato e uma chaminé oca de 50 m com porta na base (mergulho por dentro).

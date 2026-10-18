@@ -1,6 +1,7 @@
 // Pista de corrida reaproveitável: portões com colisão, anel verde no próximo portão,
 // cronômetro de volta e melhor volta salva (por cenário).
 import * as THREE from 'three';
+import { t } from '../i18n.js';
 import { V } from './common.js';
 
 /**
@@ -84,9 +85,9 @@ export function buildRaceTrack(kit, settings, { gates: defs, seq, key, groundAt,
               if (!state.best || lapT < state.best) {
                 state.best = lapT;
                 settings.set('game.bestLaps', { ...(settings.get('game.bestLaps') || {}), [key]: lapT }, { silent: true });
-                game.osd.flash(`NOVO RECORDE ${fmt(lapT)}`, 3, '#7dff7a');
-              } else game.osd.flash(`Volta ${fmt(lapT)}`, 2.5, '#ffe27a');
-            } else game.osd.flash('VALENDO!', 1.2, '#7dff7a');
+                game.osd.flash(t('NOVO RECORDE {t}', { t: fmt(lapT) }), 3, '#7dff7a');
+              } else game.osd.flash(t('Volta {t}', { t: fmt(lapT) }), 2.5, '#ffe27a');
+            } else game.osd.flash(t('VALENDO!'), 1.2, '#7dff7a');
             state.running = true;
             state.lap++;
             state.lapStart = state.time;
@@ -100,7 +101,8 @@ export function buildRaceTrack(kit, settings, { gates: defs, seq, key, groundAt,
     }
     state.prev = (state.prev || new THREE.Vector3()).copy(pos);
     const cur = state.running ? fmt(state.time - state.lapStart) : '--:--';
-    return `VOLTA ${Math.max(1, state.lap)}  ${cur}  · PORTÃO ${state.next + 1}/${seq.length}` + (state.best ? `  · MELHOR ${fmt(state.best)}` : '');
+    return t('VOLTA {lap}  {cur}  · PORTÃO {gate}/{n}', { lap: Math.max(1, state.lap), cur, gate: state.next + 1, n: seq.length })
+      + (state.best ? t('  · MELHOR {t}', { t: fmt(state.best) }) : '');
   };
 
   const onRespawn = () => {

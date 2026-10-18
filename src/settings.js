@@ -77,6 +77,11 @@ export const CONTROL_LAYOUTS = {
   radioAETR: { label: 'Rádio FPV · AETR (EdgeTX/OpenTX padrão)', roll: { type: 'axis', index: 0, invert: false }, pitch: { type: 'axis', index: 1, invert: false }, throttle: { type: 'axis', index: 2, invert: false }, yaw: { type: 'axis', index: 3, invert: false }, extra: RADIO_EXTRA },
   radioTAER: { label: 'Rádio FPV · TAER (Spektrum/FrSky antigo)', throttle: { type: 'axis', index: 0, invert: false }, roll: { type: 'axis', index: 1, invert: false }, pitch: { type: 'axis', index: 2, invert: false }, yaw: { type: 'axis', index: 3, invert: false }, extra: RADIO_EXTRA },
 };
+// O que um preset do jogador guarda (o "setup" do drone)
+export const PRESET_KEYS = ['drone', 'battery', 'rates', 'fc', 'camera'];
+// Ficam só neste aparelho (não vão para a conta): gráficos e controles de toque
+const DEVICE_INPUT_KEYS = ['touch', 'touchSize', 'gamepadIndex'];
+
 // O que fica salvo por controle (cada controle/rádio lembra o próprio mapeamento)
 export const PROFILE_KEYS = ['layout', 'throttle', 'yaw', 'pitch', 'roll', 'throttleMode', 'deadband', 'throttleDeadband', 'calib', 'buttons', 'armSwitch'];
 
@@ -111,7 +116,7 @@ export const DEFAULTS = {
     yaw: { ...CONTROL_LAYOUTS.mode2.yaw },
     pitch: { ...CONTROL_LAYOUTS.mode2.pitch },
     roll: { ...CONTROL_LAYOUTS.mode2.roll },
-    throttleMode: 'full', deadband: 0.04, throttleDeadband: 0.0,
+    throttleMode: 'full', deadband: 0.04, throttleDeadband: 0.0, touch: 'auto', touchSize: 1,
     calib: {},
     buttons: { ...PAD_BUTTONS },
     armSafety: true, armSwitch: false, gamepadIndex: -1,
@@ -127,7 +132,8 @@ export const DEFAULTS = {
     dynamicRes: true, targetFps: 50, fpsCap: 0, showFps: true, fog: true,
   },
   audio: { volume: 0.5, motor: true, wind: true },
-  game: { osd: true, showSticks: true, scene: 'fields', bestLaps: {} },
+  game: { osd: true, showSticks: true, scene: 'fields', bestLaps: {}, lang: 'auto' },
+  presets: [], // presets do jogador: [{ name, savedAt, data: { drone, battery, rates, fc, camera } }]
 };
 
 function stripLabel(o) { const { label, ...rest } = o; return rest; }
@@ -145,6 +151,10 @@ export const SCHEMA = [
       { path: 'input.throttleDeadband', label: 'Deadband do throttle', type: 'range', min: 0, max: 0.15, step: 0.005, ...pct },
       { path: 'input.armSafety', label: 'Só armar com throttle baixo', type: 'toggle' },
       { path: 'input.armSwitch', label: 'Armar por chave (mantida)', type: 'toggle', help: 'Ligado: armado enquanto a chave/botão estiver ativo, como num rádio com Betaflight. Desligado: cada toque alterna armar/desarmar.' },
+    ] },
+    { title: 'Controles na tela (celular e tablet)', fields: [
+      { path: 'input.touch', label: 'Sticks e botões na tela', type: 'select', options: { auto: 'Automático (celular e tablet)', on: 'Sempre', off: 'Desligados' }, help: 'Somem sozinhos quando um controle está conectado. Stick esquerdo: throttle (fica onde você soltar) e yaw; direito: pitch e roll.' },
+      { path: 'input.touchSize', label: 'Tamanho dos controles na tela', type: 'range', min: 0.7, max: 1.4, step: 0.05, ...pct },
     ] },
     { title: 'Controle detectado', custom: 'gamepadMonitor' },
     { title: 'Canais', custom: 'channels' },
@@ -287,6 +297,9 @@ export const SCHEMA = [
       { path: 'camera.losZoom', label: 'Zoom automático (linha de visada)', type: 'toggle' },
     ] },
   ] },
+  { tab: 'Presets', id: 'presets', groups: [
+    { title: 'Meus presets', custom: 'userPresets' },
+  ] },
   { tab: 'Gráficos', id: 'graphics', groups: [
     { title: 'Qualidade', fields: [
       { path: 'graphics.preset', label: 'Preset', type: 'select', options: Object.fromEntries(Object.entries(GRAPHICS_PRESETS).map(([k, v]) => [k, v.label])) },
@@ -316,6 +329,7 @@ export const SCHEMA = [
       { path: 'audio.wind', label: 'Som do vento', type: 'toggle' },
     ] },
     { title: 'Interface', fields: [
+      { path: 'game.lang', label: 'Idioma / Language', type: 'select', options: { auto: 'Automático (idioma do navegador)', pt: 'Português', en: 'English' } },
       { path: 'game.osd', label: 'OSD (informações na tela)', type: 'toggle' },
       { path: 'game.showSticks', label: 'Mostrar posição dos sticks', type: 'toggle' },
     ] },
@@ -346,12 +360,38 @@ function deepMerge(base, over) {
   return out;
 }
 
+/** Placa de vídeo dedicada/rápida, pelo nome que o navegador informa (o Safari esconde: "Apple GPU"). */
+function strongGpu() {
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    if (!gl) return false;
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const name = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return /RTX|GTX ?(9[6-8]0|1[0-9]{3})|Radeon RX|RX ?[5-7][0-9]{3}|Arc A[0-9]|Apple M[0-9]/i.test(name);
+  } catch { return false; }
+}
+
 export class Settings {
   constructor() {
     this.listeners = new Set();
     let saved = null;
     try { saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch { saved = null; }
     this.data = deepMerge(structuredClone(DEFAULTS), saved || {});
+    this.firstRun = !saved;
+    if (this.firstRun) this.deviceDefaults();
+  }
+
+  /**
+   * Primeira visita: celular/tablet começa no gráfico Baixo e no modo Angle (sticks na tela são
+   * difíceis em Acro); placa de vídeo forte começa no Alto. O resto fica no Médio.
+   */
+  deviceDefaults() {
+    const touchOnly = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !matchMedia('(any-pointer: fine)').matches;
+    let preset = null;
+    if (touchOnly) { preset = 'low'; this.data.fc.mode = 'angle'; }
+    else if (strongGpu()) preset = 'high';
+    if (preset) Object.assign(this.data.graphics, stripLabel(GRAPHICS_PRESETS[preset]), { preset });
   }
 
   get(path) { return getPath(this.data, path); }
@@ -376,6 +416,51 @@ export class Settings {
 
   save() {
     try { localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data)); } catch { /* modo privado */ }
+    this.onSaved?.(); // conta: sobe para a nuvem alguns segundos depois
+  }
+
+  emitAll(path = '*') { for (const fn of this.listeners) fn(path, null); }
+
+  // ---- conta (nuvem)
+  /** O que vai para a conta: tudo menos o que é deste aparelho. */
+  syncData() {
+    const { graphics, ...rest } = structuredClone(this.data);
+    for (const k of DEVICE_INPUT_KEYS) delete rest.input[k];
+    return { v: 1, ...rest };
+  }
+
+  /** Aplica o que veio da conta, mantendo gráficos e controles de toque deste aparelho. */
+  applySynced(remote) {
+    const { v, ...data } = remote || {};
+    const input = { ...data.input };
+    for (const k of DEVICE_INPUT_KEYS) input[k] = this.data.input[k];
+    this.data = deepMerge(structuredClone(DEFAULTS), { ...data, input, graphics: this.data.graphics });
+    this.save();
+    this.emitAll();
+  }
+
+  // ---- presets do jogador
+  savePreset(name) {
+    const data = Object.fromEntries(PRESET_KEYS.map(k => [k, structuredClone(this.data[k])]));
+    const list = (this.data.presets || []).filter(p => p.name !== name);
+    this.data.presets = [{ name, savedAt: Date.now(), data }, ...list].slice(0, 50);
+    this.save();
+    this.emitAll('presets');
+  }
+
+  loadPreset(name) {
+    const p = (this.data.presets || []).find(x => x.name === name);
+    if (!p) return false;
+    for (const k of PRESET_KEYS) if (p.data[k]) this.data[k] = deepMerge(structuredClone(DEFAULTS[k]), p.data[k]);
+    this.save();
+    this.emitAll();
+    return true;
+  }
+
+  deletePreset(name) {
+    this.data.presets = (this.data.presets || []).filter(p => p.name !== name);
+    this.save();
+    this.emitAll('presets');
   }
 
   resetSection(section) {
@@ -385,9 +470,10 @@ export class Settings {
   }
 
   resetAll() {
-    const bestLaps = this.data.game.bestLaps;
+    const { bestLaps } = this.data.game, { presets } = this.data;
     this.data = structuredClone(DEFAULTS);
     this.data.game.bestLaps = bestLaps;
+    this.data.presets = presets;
     this.save();
     for (const fn of this.listeners) fn('*', null);
   }
