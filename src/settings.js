@@ -1,6 +1,7 @@
 // Todas as configurações do jogo: valores padrão, presets, schema da tela de
 // configurações e persistência em localStorage.
 
+// "fpvsim" é o nome antigo do jogo: a chave fica igual para ninguém perder as configurações
 const STORAGE_KEY = 'fpvsim.settings.v1';
 
 // ---------------------------------------------------------------------------

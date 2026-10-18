@@ -3,7 +3,7 @@
 //
 // Usa o Firebase (Authentication + Firestore, plano grátis) pela API REST — sem biblioteca
 // extra. O Firebase só aceita login por e-mail, então o nome de usuário vira um endereço que
-// não existe: "joao" → joao@fpvsim.example.com. O domínio example.com é reservado e nunca
+// não existe: "joao" → joao@diveprop.example.com. O domínio example.com é reservado e nunca
 // recebe e-mail, então ninguém consegue pedir "esqueci a senha" de uma conta alheia.
 //
 // Sincronização: tudo menos os gráficos (cada aparelho tem o seu) e os controles de toque.
@@ -11,9 +11,9 @@
 import CONFIG from './cloud-config.js';
 import { t } from './i18n.js';
 
-const STORE = 'fpvsim.account.v1';
+const STORE = 'fpvsim.account.v1'; // nome antigo do jogo, mantido para não perder sessões
 const USER_RE = /^[a-z0-9_.-]{3,20}$/;
-const EMAIL_DOMAIN = 'fpvsim.example.com';
+const EMAIL_DOMAIN = 'diveprop.example.com';
 
 export class CloudError extends Error {
   constructor(code) { super(code); this.code = code; }
@@ -110,8 +110,8 @@ class FirebaseBackend {
 
 /** Servidor de mentira guardado no localStorage, para testar sem Firebase (?cloud=mock no `npm run dev`). */
 class MockBackend {
-  db() { try { return JSON.parse(localStorage.getItem('fpvsim.mockserver') || '{"users":{},"docs":{}}'); } catch { return { users: {}, docs: {} }; } }
-  put(db) { localStorage.setItem('fpvsim.mockserver', JSON.stringify(db)); }
+  db() { try { return JSON.parse(localStorage.getItem('diveprop.mockserver') || '{"users":{},"docs":{}}'); } catch { return { users: {}, docs: {} }; } }
+  put(db) { localStorage.setItem('diveprop.mockserver', JSON.stringify(db)); }
   async wait() { await new Promise(r => setTimeout(r, 120)); }
   session(username, uid) { return { uid, username, idToken: 'mock-' + uid, refreshToken: 'mock-r-' + uid, expiresAt: Date.now() + 3600e3 }; }
   async signUp(u, p) {

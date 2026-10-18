@@ -1,12 +1,14 @@
-# FPVsim
+# DiveProp
 
 Simulador de drone FPV em 3D que roda direto no navegador, com física realista, 9 cenários
 e tudo configurável. Joga com controle de videogame (PS3, PS4, PS5, Xbox, Switch), com
 rádio FPV de verdade ou com os sticks na tela do celular. 100% gratuito, sem instalar nada.
 
-### ▶ Jogar: **https://joaomarcos91.github.io/fpvsim/**
+### ▶ Jogar: **https://joaomarcos91.github.io/diveprop/**
 
-> **English:** FPVsim is a free FPV drone simulator that runs in your browser — realistic
+*(Antes se chamava FPVsim.)*
+
+> **English:** DiveProp is a free FPV drone simulator that runs in your browser — realistic
 > physics, 9 maps (abandoned factory and power plant with hollow chimneys and a ladder-dive
 > stairwell, mountains, race track, beach, quarry, indoor gym…) and every parameter tunable.
 > Play with a gamepad (PS3/PS4/PS5, Xbox, Switch), a real FPV radio over USB (EdgeTX/OpenTX
@@ -159,7 +161,7 @@ npm run dev
 ```
 
 …e abrir `http://127.0.0.1:5173/`. No macOS também dá para dar duplo-clique em
-`Iniciar FPVsim.command`, que faz tudo isso e abre o Safari.
+`Iniciar DiveProp.command`, que faz tudo isso e abre o Safari.
 
 - `npm run deploy` gera o build e publica no GitHub Pages (branch `gh-pages`).
 - `node scripts/i18n-keys.mjs` lista os textos que ainda não têm tradução em inglês.
@@ -181,7 +183,7 @@ biblioteca extra. Uma vez só:
 5. Recomendado: no Google Cloud Console → APIs e serviços → Credenciais, restrinja a chave
    de API aos referenciadores `https://joaomarcos91.github.io/*` e `http://127.0.0.1:5173/*`.
 
-O nome de usuário vira um e-mail que não existe (`joao@fpvsim.example.com` — o domínio
+O nome de usuário vira um e-mail que não existe (`joao@diveprop.example.com` — o domínio
 `example.com` é reservado e nunca recebe mensagens), então nenhum e-mail é enviado. Para
 testar sem Firebase: `http://127.0.0.1:5173/?dev=1&cloud=mock` usa um servidor de mentira
 guardado no próprio navegador.

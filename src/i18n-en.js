@@ -98,7 +98,7 @@ export default {
   'BATERIA FRACA': 'LOW BATTERY',
   'Linha de visada': 'Line of sight',
   'Não deu para abrir o 3D': 'Couldn’t start the 3D view',
-  'O FPVsim precisa de <b>WebGL2</b>. Quase sempre resolve:': 'FPVsim needs <b>WebGL2</b>. This usually fixes it:',
+  'O DiveProp precisa de <b>WebGL2</b>. Quase sempre resolve:': 'DiveProp needs <b>WebGL2</b>. This usually fixes it:',
   'atualizar o navegador ou abrir em outro (Chrome, Edge, Firefox ou Safari);': 'update your browser or try another one (Chrome, Edge, Firefox or Safari);',
   'ligar a <b>aceleração de hardware</b> nas configurações do navegador;': 'turn on <b>hardware acceleration</b> in the browser settings;',
   'no celular, abrir o link no navegador em vez de dentro de um app (Instagram, Facebook…);': 'on a phone, open the link in the browser instead of inside an app (Instagram, Facebook…);',

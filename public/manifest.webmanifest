@@ -1,6 +1,6 @@
 {
-  "name": "FPVsim — simulador de drone FPV",
-  "short_name": "FPVsim",
+  "name": "DiveProp — simulador de drone FPV",
+  "short_name": "DiveProp",
   "description": "Simulador de drone FPV grátis no navegador, com física realista.",
   "lang": "pt-BR",
   "start_url": "./",

@@ -1,4 +1,4 @@
-// FPVsim — laço principal do jogo.
+// DiveProp — laço principal do jogo.
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import './style.css';
@@ -516,7 +516,7 @@ game.init().catch(err => {
   const el = document.getElementById('fatal');
   el.hidden = false;
   el.innerHTML = `<h2>${t('Não deu para abrir o 3D')}</h2>
-    <p>${t('O FPVsim precisa de <b>WebGL2</b>. Quase sempre resolve:')}</p>
+    <p>${t('O DiveProp precisa de <b>WebGL2</b>. Quase sempre resolve:')}</p>
     <ul><li>${t('atualizar o navegador ou abrir em outro (Chrome, Edge, Firefox ou Safari);')}</li>
     <li>${t('ligar a <b>aceleração de hardware</b> nas configurações do navegador;')}</li>
     <li>${t('no celular, abrir o link no navegador em vez de dentro de um app (Instagram, Facebook…);')}</li>

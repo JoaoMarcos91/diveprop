@@ -58,7 +58,7 @@ export class UI {
     const other = getLang() === 'en' ? 'pt' : 'en';
     this.root.innerHTML = `
       <div class="screen" id="scr-main">
-        <div class="brand"><h1>FPV<span>sim</span></h1><p>${te('Simulador de drone FPV · física realista')}</p></div>
+        <div class="brand"><h1>Dive<span>Prop</span></h1><p>${te('Simulador de drone FPV · física realista')}</p></div>
         <div class="menu-list">
           <button data-act="fly" class="primary">${te('Voar')}</button>
           <button data-act="settings">${te('Configurações')}</button>
@@ -66,7 +66,7 @@ export class UI {
           <button data-act="account" data-account-btn hidden></button>
         </div>
         <div class="pad-status" data-pad></div>
-        <div class="menu-foot"><button data-act="share" class="small">${te('Compartilhar com amigos')}</button><button data-act="lang" class="small" lang="${other}">${esc(LANGS[other])}</button><a href="https://github.com/JoaoMarcos91/fpvsim" target="_blank" rel="noopener">${te('Grátis e de código aberto · GitHub')}</a></div>
+        <div class="menu-foot"><button data-act="share" class="small">${te('Compartilhar com amigos')}</button><button data-act="lang" class="small" lang="${other}">${esc(LANGS[other])}</button><a href="https://github.com/JoaoMarcos91/diveprop" target="_blank" rel="noopener">${te('Grátis e de código aberto · GitHub')}</a></div>
       </div>
       <div class="screen" id="scr-scenes">
         <h2>${te('Escolha o cenário')}</h2>
@@ -182,8 +182,8 @@ export class UI {
 
   /** Compartilhar o site: menu do sistema no celular, senão copia o link. */
   async share() {
-    const url = 'https://joaomarcos91.github.io/fpvsim/';
-    const data = { title: 'FPVsim', text: t('Simulador de drone FPV grátis no navegador, com física realista. Dá para jogar com controle de PS4/PS5/Xbox, rádio FPV ou no celular:'), url };
+    const url = 'https://joaomarcos91.github.io/diveprop/';
+    const data = { title: 'DiveProp', text: t('Simulador de drone FPV grátis no navegador, com física realista. Dá para jogar com controle de PS4/PS5/Xbox, rádio FPV ou no celular:'), url };
     try {
       if (navigator.share) return await navigator.share(data);
       await navigator.clipboard.writeText(`${data.text} ${url}`);
@@ -688,7 +688,7 @@ export class UI {
       const blob = new Blob([this.settings.exportJSON()], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = 'fpvsim-config.json';
+      a.download = 'diveprop-config.json';
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     });

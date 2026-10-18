@@ -19,7 +19,7 @@ export function resolveLang(pref) { return pref === 'pt' || pref === 'en' ? pref
 export function setLang(l) {
   lang = l === 'en' ? 'en' : 'pt';
   document.documentElement.lang = lang === 'en' ? 'en' : 'pt-BR';
-  document.title = lang === 'en' ? 'FPVsim — free FPV drone simulator in your browser' : 'FPVsim — simulador de drone FPV grátis no navegador';
+  document.title = lang === 'en' ? 'DiveProp — free FPV drone simulator in your browser' : 'DiveProp — simulador de drone FPV grátis no navegador';
   document.getElementById('fs')?.setAttribute('title', lang === 'en' ? 'Fullscreen' : 'Tela cheia');
 }
 

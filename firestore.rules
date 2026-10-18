@@ -1,5 +1,5 @@
 rules_version = '2';
-// Regras do Firestore para as contas do FPVsim: cada jogador só lê e escreve o próprio
+// Regras do Firestore para as contas do DiveProp: cada jogador só lê e escreve o próprio
 // documento users/{uid}, e o JSON de configurações tem limite de tamanho.
 service cloud.firestore {
   match /databases/{database}/documents {

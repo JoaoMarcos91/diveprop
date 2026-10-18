@@ -38,7 +38,7 @@ function devBridge() {
     });
   };
   return {
-    name: 'fpvsim-dev-bridge',
+    name: 'diveprop-dev-bridge',
     configureServer: install,
     // `vite preview` também ganha a ponte, para testar um build feito com VITE_DEVBRIDGE=1
     configurePreviewServer: install,

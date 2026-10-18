@@ -1,4 +1,4 @@
-# Prompt — FPVsim (escrito por Claude para Claude)
+# Prompt — DiveProp, antes FPVsim (escrito por Claude para Claude)
 
 > Este é o prompt/especificação que usei para construir o jogo. Ele serve como
 > "contrato" do projeto: se algo não estiver aqui, não é requisito; se estiver,
