@@ -50,4 +50,7 @@ export default defineConfig({
   plugins: [devBridge()],
   server: { port: 5173, strictPort: true, watch: { ignored: ['**/.devreports/**'] } },
   build: { target: 'safari15', chunkSizeWarningLimit: 4000 },
+  // o SDK do Firebase (login com Google) só é importado sob demanda: pré-empacota no dev para
+  // o Vite não ter de reotimizar no meio do jogo
+  optimizeDeps: { include: ['@firebase/app', '@firebase/auth'] },
 });

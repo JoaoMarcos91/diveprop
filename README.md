@@ -105,10 +105,10 @@ Ajuste ou teste em **Configurações → Controle → Vibração**. Rádios FPV 
 | ![Pedreira](docs/quarry.jpg) **Pedreira** — cava em bancadas com lago no fundo, duas torres de resfriamento ocas de ~90 m (entre por baixo, entre os pilares, e saia pelo topo), britador, esteiras e caminhões. | ![Ginásio](docs/gym.jpg) **Ginásio Indoor** — pista de tiny whoop cronometrada, arquibancada, cordas e cestas de basquete (passe pelo aro!). |
 | ![Usina](docs/plant.jpg) **Usina Abandonada** — duas chaminés ocas de 85 e 100 m, galeria da esteira para voar por dentro, caldeira e salão das turbinas. | ![Poço da escada](docs/stairwell.jpg) **Ladder dive** — torre de escada de 20 andares com poço aberto: entre pelo telhado, mergulhe pelo meio da escada e saia pela porta do térreo. |
 
-## Conta (opcional · em breve)
+## Conta (opcional)
 
-Assim que as contas forem ativadas no site, o menu principal ganha **Entrar / criar conta**: só nome de usuário e senha — sem e-mail e sem
-confirmação. Com a conta, as configurações, os **presets** (Configurações → Presets), os
+No menu principal, **Entrar / criar conta**: só nome de usuário e senha — sem e-mail e sem
+confirmação — ou **Continuar com Google**. Com a conta, as configurações, os **presets** (Configurações → Presets), os
 mapeamentos de controle e as melhores voltas ficam salvos na nuvem e voltam em qualquer
 computador ou celular. Os gráficos ficam em cada aparelho. Sem e-mail não há "esqueci a senha":
 guarde a senha. Sem conta, tudo continua salvo no navegador.
@@ -168,13 +168,17 @@ npm run dev
 
 ### Ativar as contas (Firebase, grátis)
 
-As contas usam um projeto do Firebase no plano grátis (Spark), pela API REST — sem
-biblioteca extra. Uma vez só:
+As contas usam um projeto do Firebase no plano grátis (Spark), pela API REST; o SDK do
+Firebase só é baixado (~160 KB) quando alguém abre a tela de conta, para a janela do Google.
+Uma vez só:
 
 1. Em <https://console.firebase.google.com>, **Adicionar projeto** (o Google Analytics pode
    ficar desligado).
 2. **Criação → Authentication → Vamos começar → E-mail/senha → Ativar** (deixe "Link do
-   e-mail" desligado) e salve.
+   e-mail" desligado) e salve. Para o botão do Google, ative também o provedor **Google** e, em
+   **Authentication → Configurações → Domínios autorizados**, adicione o domínio do site
+   (`joaomarcos91.github.io`). `localhost` já vem autorizado para testar no `npm run dev`
+   (abra `http://localhost:5173`, não `127.0.0.1`).
 3. **Criação → Firestore Database → Criar banco de dados**, modo de produção, região
    `southamerica-east1` (São Paulo). Na aba **Regras**, cole o conteúdo de
    [`firestore.rules`](firestore.rules) e **Publicar**.
@@ -204,7 +208,7 @@ src/haptics.js     vibração (dual-rumble, trigger-rumble, pulse)
 src/settings.js    padrões, presets, layouts, schema da tela de configurações
 src/ui.js          menus, configurações, calibração, remapeamento
 src/i18n.js        idiomas: t('texto em português') → inglês (src/i18n-en.js)
-src/cloud.js       contas (usuário e senha) e sincronização na nuvem (Firebase REST)
+src/cloud.js       contas (usuário e senha ou Google) e sincronização na nuvem (Firebase)
 src/osd.js         OSD estilo Betaflight
 src/render.js      renderizador, pós-processamento FPV, resolução dinâmica
 src/assets.js      materiais (texturas CC0) e céus HDRI

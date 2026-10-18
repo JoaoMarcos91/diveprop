@@ -1,10 +1,12 @@
 // Contas: login só com nome de usuário e senha (sem e-mail, sem confirmação) que guarda as
 // configurações e os presets na nuvem e os traz de volta em qualquer aparelho.
 //
-// Usa o Firebase (Authentication + Firestore, plano grátis) pela API REST — sem biblioteca
-// extra. O Firebase só aceita login por e-mail, então o nome de usuário vira um endereço que
-// não existe: "joao" → joao@diveprop.example.com. O domínio example.com é reservado e nunca
-// recebe e-mail, então ninguém consegue pedir "esqueci a senha" de uma conta alheia.
+// Usa o Firebase (Authentication + Firestore, plano grátis) pela API REST. O Firebase só aceita
+// login por e-mail, então o nome de usuário vira um endereço que não existe: "joao" →
+// joao@diveprop.example.com. O domínio example.com é reservado e nunca recebe e-mail, então
+// ninguém consegue pedir "esqueci a senha" de uma conta alheia.
+// "Continuar com Google" usa o SDK do Firebase só para abrir a janela do Google (carregado
+// quando a tela de conta abre); dali em diante a sessão segue pela mesma API REST.
 //
 // Sincronização: tudo menos os gráficos (cada aparelho tem o seu) e os controles de toque.
 // Ao entrar, a nuvem manda; depois, cada mudança sobe sozinha alguns segundos depois.
@@ -19,9 +21,18 @@ export class CloudError extends Error {
   constructor(code) { super(code); this.code = code; }
 }
 
+/** Código de um erro qualquer: do Firebase/nosso, ou o tipo e o texto de um erro de JavaScript. */
+function errorCode(e) {
+  if (e?.code) return e.code;
+  const text = String(e?.message || e || '');
+  // página aberta antes de uma atualização do site: o pedaço do jogo com o login não existe mais
+  if (/dynamically imported module|Importing a module script failed|error loading dynamically|Load failed/i.test(text)) return 'LOAD_FAILED';
+  return `${e?.name || 'Error'}: ${text}`.slice(0, 120);
+}
+
 /** Mensagem para o jogador a partir do código de erro do Firebase (ou nosso). */
 export function cloudMessage(e) {
-  const code = e?.code || 'UNKNOWN';
+  const code = errorCode(e);
   const map = {
     BAD_USERNAME: 'Nome de usuário: 3 a 20 letras, números, ponto, hífen ou _ (sem espaços nem acentos).',
     BAD_PASSWORD: 'A senha precisa ter pelo menos 6 caracteres.',
@@ -37,7 +48,17 @@ export function cloudMessage(e) {
     SESSION_EXPIRED: 'Sua sessão expirou. Entre de novo.',
     PERMISSION_DENIED: 'O servidor recusou o acesso (confira as regras do Firestore).',
     NETWORK: 'Sem conexão com o servidor. Confira a internet.',
-    UNKNOWN: 'Erro no servidor ({code}).',
+    LOAD_FAILED: 'Não deu para carregar o login do Google. Recarregue a página e tente de novo.',
+    'auth/network-request-failed': 'Sem conexão com o servidor. Confira a internet.',
+    'auth/popup-closed-by-user': 'Login com Google cancelado.',
+    'auth/cancelled-popup-request': 'Login com Google cancelado.',
+    'auth/user-cancelled': 'Login com Google cancelado.',
+    'auth/popup-blocked': 'O navegador bloqueou a janela do Google. Permita pop-ups para este site e tente de novo.',
+    'auth/unauthorized-domain': 'Este endereço não está autorizado no Firebase (Authentication → Configurações → Domínios autorizados).',
+    'auth/operation-not-allowed': 'O login com Google não está ativado no Firebase.',
+    'auth/disallowed-useragent': 'O Google não deixa entrar por dentro de apps (Instagram, Facebook…). Abra o link no navegador.',
+    'auth/web-storage-unsupported': 'Este navegador bloqueia o login com Google (cookies ou armazenamento desligados).',
+    UNKNOWN: 'Erro inesperado ({code}).',
   };
   return t(map[code] || map.UNKNOWN, { code });
 }
@@ -93,6 +114,32 @@ class FirebaseBackend {
 
   deleteUser(s) { return this.auth('delete', { idToken: s.idToken }); }
 
+  /** Carrega o SDK e prepara a janela do Google antes do clique (o Safari bloqueia pop-up atrasado). */
+  prepareGoogle() {
+    this.google ??= Promise.all([import('@firebase/app'), import('@firebase/auth')]).then(([F, A]) => {
+      const app = F.getApps()[0] || F.initializeApp({ apiKey: this.key, projectId: this.project, authDomain: `${this.project}.firebaseapp.com` });
+      // sem sessão própria do SDK: quem guarda a sessão é o Cloud (localStorage + REST)
+      const auth = A.initializeAuth(app, { persistence: A.inMemoryPersistence, popupRedirectResolver: A.browserPopupRedirectResolver });
+      return { A, auth };
+    });
+    this.google.catch(() => { this.google = null; });
+    return this.google;
+  }
+
+  async googleSignIn() {
+    let A, auth, cred;
+    try { ({ A, auth } = await this.prepareGoogle()); } catch { throw new CloudError('LOAD_FAILED'); }
+    try { cred = await A.signInWithPopup(auth, new A.GoogleAuthProvider()); }
+    catch (e) { console.error('[DiveProp] login com Google:', e); throw new CloudError(errorCode(e)); }
+    const u = cred.user, r = await u.getIdTokenResult();
+    const session = {
+      uid: u.uid, provider: 'google', username: (u.displayName || u.email?.split('@')[0] || 'Google').slice(0, 20),
+      idToken: r.token, refreshToken: u.refreshToken, expiresAt: Date.parse(r.expirationTime) - 60000,
+    };
+    await A.signOut(auth); // só limpa o SDK; a sessão continua valendo pelo refresh token
+    return session;
+  }
+
   doc(s) { return `https://firestore.googleapis.com/v1/projects/${this.project}/databases/(default)/documents/users/${s.uid}`; }
 
   async getDoc(s) {
@@ -125,6 +172,12 @@ class MockBackend {
     if (!rec || rec.pass !== hash(p + u)) throw new CloudError('INVALID_LOGIN_CREDENTIALS');
     return this.session(u, rec.uid);
   }
+  async prepareGoogle() {}
+  async googleSignIn() {
+    await this.wait(); const db = this.db();
+    db.users['google:teste'] ??= { pass: 0, uid: 'g' + Date.now().toString(36) }; this.put(db);
+    return { ...this.session('Piloto Google', db.users['google:teste'].uid), provider: 'google' };
+  }
   async refresh(s) { await this.wait(); if (!Object.values(this.db().users).some(r => r.uid === s.uid)) throw new CloudError('SESSION_EXPIRED'); return { ...s, expiresAt: Date.now() + 3600e3 }; }
   async changePassword(s, p) { await this.wait(); const db = this.db(); db.users[s.username].pass = hash(p + s.username); this.put(db); return s; }
   async deleteUser(s) { await this.wait(); const db = this.db(); delete db.users[s.username]; this.put(db); }
@@ -155,8 +208,8 @@ export class Cloud {
 
   persist() {
     if (!this.session) { localStorage.removeItem(STORE); return; }
-    const { uid, username, refreshToken, idToken, expiresAt, updateTime, hash: h } = this.session;
-    try { localStorage.setItem(STORE, JSON.stringify({ uid, username, refreshToken, idToken, expiresAt, updateTime, hash: h })); } catch { /* modo privado */ }
+    const { uid, username, provider, refreshToken, idToken, expiresAt, updateTime, hash: h } = this.session;
+    try { localStorage.setItem(STORE, JSON.stringify({ uid, username, provider, refreshToken, idToken, expiresAt, updateTime, hash: h })); } catch { /* modo privado */ }
   }
 
   /** Sessão com token válido (renova o token de 1 hora quando precisa). */
@@ -202,6 +255,19 @@ export class Cloud {
     if (!had) await this.push(true);
     return had;
   }
+
+  /** Deixa a janela do Google pronta (chamado quando a tela de conta abre). */
+  prepareGoogle() { this.backend?.prepareGoogle?.().catch(() => {}); }
+
+  async signInWithGoogle() {
+    this.session = await this.backend.googleSignIn();
+    this.persist();
+    const had = await this.pull(false);
+    if (!had) await this.push(true);
+    return had;
+  }
+
+  get google() { return this.session?.provider === 'google'; }
 
   /** Ao abrir o jogo com sessão salva: traz da nuvem o que mudou em outro aparelho. */
   async start() {

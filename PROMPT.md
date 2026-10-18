@@ -73,7 +73,7 @@ Simular um quadricóptero em X com passo fixo (padrão 500 Hz, configurável):
 - Celular/tablet: sticks e botões na tela (Pointer Events), aviso para deitar o aparelho, primeira
   visita no gráfico Baixo e modo Angle; placa de vídeo forte começa no Alto.
 - Texturas 1K recomprimidas (cor 4:2:0 q80, normal/ARM 4:4:4 q85): ~⅓ do download.
-- Conta opcional só com usuário e senha (sem e-mail/confirmação) via Firebase REST (Auth +
+- Conta opcional com usuário e senha (sem e-mail/confirmação) ou Google, via Firebase (Auth +
   Firestore, plano grátis): sincroniza configurações, presets do jogador, controles e voltas;
   gráficos ficam por aparelho. `?cloud=mock` testa sem servidor.
 - Português e inglês: o texto em português do código é a chave (`t('Voar')` → "Fly"); idioma

@@ -98,6 +98,13 @@ export function startDev(game) {
       case 'fill': { const el = document.querySelector(cmd.sel); if (el) { el.value = cmd.value; el.dispatchEvent(new Event('input', { bubbles: true })); } else log('error', { msg: 'fill: nada em ' + cmd.sel }); break; }
       case 'click': { const el = document.querySelector(cmd.sel); if (el) el.click(); else log('error', { msg: 'click: nada em ' + cmd.sel }); break; }
       case 'submit': { const f = document.querySelector(cmd.sel); if (f) f.requestSubmit(); else log('error', { msg: 'submit: nada em ' + cmd.sel }); break; }
+      case 'probe': { // estado do login com Google (SDK, iframe de autenticação)
+        let prep = 'ok';
+        try { await game.cloud.backend?.prepareGoogle?.(); } catch (e) { prep = String(e?.code || e?.message || e); }
+        await new Promise(r => setTimeout(r, cmd.wait || 2500));
+        log('probe', { prep, gapi: typeof window.gapi, iframes: [...document.querySelectorAll('iframe')].map(f => f.src.slice(0, 90)), origin: location.origin });
+        break;
+      }
       case 'get': log('get', { path: cmd.path, value: cmd.path === 'presets' ? game.settings.data.presets.map(p => p.name) : game.settings.get(cmd.path), user: game.cloud?.user, status: game.cloud?.status }); break;
       case 'wipe': { // "aparelho novo": configurações de fábrica, inclusive presets
         const { DEFAULTS } = await import('./settings.js');

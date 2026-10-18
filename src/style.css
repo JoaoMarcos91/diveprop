@@ -196,3 +196,8 @@ html, body { touch-action: manipulation; overscroll-behavior: none; }
 .account-more summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 .account-more form { margin-top: 10px; }
 .account-more input { flex: 1; }
+
+.or { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 12px; }
+.or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+button.google { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: #1f1f1f; border-color: #dadce0; font-weight: 600; }
+button.google:hover { background: #f2f2f2; }
