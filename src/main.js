@@ -422,18 +422,23 @@ class Game {
     this.signalTimer -= dt;
     if (this.signalTimer <= 0) {
       this.signalTimer = 0.2;
-      const pp = this.pilotPos;
-      const from = { x: pp.x, y: this.kit.heightAt(pp.x, pp.z) + 2, z: pp.z };
-      const dx = pos.x - from.x, dy = pos.y - from.y, dz = pos.z - from.z;
-      const dist = Math.hypot(dx, dy, dz);
-      let blocked = 0;
-      if (dist > 1) {
-        const r = new RAPIER.Ray(from, { x: dx / dist, y: dy / dist, z: dz / dist });
-        const h = this.world.castRay(r, dist - 0.4, true, undefined, undefined, undefined, drone.body);
-        if (h) blocked = THREE.MathUtils.clamp((dist - h.timeOfImpact) / 60, 0.12, 0.4);
-      }
+      // o melhor entre o piloto e as repetidoras do cenário (ex.: antena no pico do Vale)
       const range = this.settings.get('world.videoRange');
-      this.signalTarget = THREE.MathUtils.clamp(1 - Math.pow(dist / range, 2) - blocked, 0, 1);
+      const pp = this.pilotPos;
+      const rx = [{ x: pp.x, y: this.kit.heightAt(pp.x, pp.z) + 2, z: pp.z }, ...(this.info.relays || [])];
+      let best = 0;
+      for (const from of rx) {
+        const dx = pos.x - from.x, dy = pos.y - from.y, dz = pos.z - from.z;
+        const dist = Math.hypot(dx, dy, dz);
+        let blocked = 0;
+        if (dist > 1) {
+          const r = new RAPIER.Ray(from, { x: dx / dist, y: dy / dist, z: dz / dist });
+          const h = this.world.castRay(r, dist - 0.4, true, undefined, undefined, undefined, drone.body);
+          if (h) blocked = THREE.MathUtils.clamp((dist - h.timeOfImpact) / 60, 0.12, 0.4);
+        }
+        best = Math.max(best, THREE.MathUtils.clamp(1 - Math.pow(dist / range, 2) - blocked, 0, 1));
+      }
+      this.signalTarget = best;
     }
     this.signal += ((this.signalTarget ?? 1) - this.signal) * Math.min(1, dt * 4);
 

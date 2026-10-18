@@ -1,6 +1,6 @@
 # FPVsim
 
-Simulador de drone FPV em 3D que roda direto no navegador, com física realista, 8 cenários
+Simulador de drone FPV em 3D que roda direto no navegador, com física realista, 9 cenários
 e tudo configurável. Joga com controle de videogame (PS3, PS4, PS5, Xbox, Switch) ou com
 rádio FPV de verdade. 100% gratuito.
 
@@ -81,8 +81,9 @@ Ajuste ou teste em **Configurações → Controle → Vibração**. Rádios FPV 
 | ![Fábrica](docs/factory.jpg) **Fábrica Abandonada** — galpão de tijolos com janelas quebradas e telhado furado, treliças, mezanino, contêineres e tanques. | ![Chaminé](docs/chimney.jpg) **A chaminé** — 50 m de altura, oca: entre por cima, mergulhe por dentro e saia pela porta na base. |
 | ![Dentro da chaminé](docs/chimney-dive.jpg) **Mergulho na chaminé** | ![Prédio](docs/tower.jpg) **Prédio Inacabado** — esqueleto de 12 andares, andaime, guindaste de 56 m e estacionamento. |
 | ![Pista](docs/race.jpg) **Pista de Corrida** — 10 portões grandes (3,3 × 3 m), cronômetro e melhor volta salva. | ![Campos](docs/fields.jpg) **Campos e Árvores** — fazenda, celeiro vazado, floresta, fios de alta tensão e lago. |
-| ![Praia](docs/beach.jpg) **Praia** — enseada com mar, coqueiros, píer de madeira (voe entre os pilares), farol num rochedo e barcos. | ![Vale](docs/valley.jpg) **Vale nas Montanhas** — rio entre montanhas, cachoeira caindo num lago, ponte alta e floresta de pinheiros. |
+| ![Praia](docs/beach.jpg) **Praia** — enseada com mar, coqueiros, píer de madeira (voe entre os pilares), farol num rochedo e barcos. | ![Vale](docs/valley.jpg) **Vale nas Montanhas** — montanhas de até ~400 m com plataforma no pico para dives longos (com repetidora de vídeo), rio, cachoeira caindo num lago, ponte alta e pinheiros. |
 | ![Pedreira](docs/quarry.jpg) **Pedreira** — cava em bancadas com lago no fundo, duas torres de resfriamento ocas de ~90 m (entre por baixo, entre os pilares, e saia pelo topo), britador, esteiras e caminhões. | ![Ginásio](docs/gym.jpg) **Ginásio Indoor** — pista de tiny whoop cronometrada, arquibancada, cordas e cestas de basquete (passe pelo aro!). |
+| ![Usina](docs/plant.jpg) **Usina Abandonada** — duas chaminés ocas de 85 e 100 m, galeria da esteira para voar por dentro, caldeira e salão das turbinas. | ![Poço da escada](docs/stairwell.jpg) **Ladder dive** — torre de escada de 20 andares com poço aberto: entre pelo telhado, mergulhe pelo meio da escada e saia pela porta do térreo. |
 
 ## O que dá para configurar
 
@@ -150,7 +151,7 @@ src/osd.js         OSD estilo Betaflight
 src/render.js      renderizador, pós-processamento FPV, resolução dinâmica
 src/assets.js      materiais (texturas CC0) e céus HDRI
 src/kit.js         ferramentas de montagem: caixas, terreno, árvores, grama, colisores
-src/scenes/*.js    os 8 cenários (raceTrack.js = portões + cronômetro reaproveitável)
+src/scenes/*.js    os 9 cenários (raceTrack.js = portões + cronômetro reaproveitável)
 scripts/           download das texturas e publicação
 PROMPT.md          a especificação usada para construir o jogo + a decisão app × site
 ```

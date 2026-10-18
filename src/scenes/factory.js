@@ -3,7 +3,7 @@
 // (dá para mergulhar dentro dela e sair pela porta da base).
 import * as THREE from 'three';
 import { fbm } from '../kit.js';
-import { V, smooth, wall, gableEnd, container, rubble, scatter } from './common.js';
+import { V, smooth, wall, gableEnd, container, rubble, scatter, brickChimney } from './common.js';
 
 export function buildFactory(kit, settings) {
   const veg = settings.get('graphics.vegetation');
@@ -149,28 +149,7 @@ export function buildFactory(kit, settings) {
 
   // ---------------------------------------------------------------- chaminé de tijolos OCA (50 m)
   // Dá para entrar por cima, mergulhar por dentro e sair pela porta da base (virada para o galpão).
-  {
-    const CH = { x: -42, z: -36, h: 50, r0: 4.4, r1: 3.2, t: 0.45, doorH: 4.2 };
-    const doorAngle = Math.atan2(-CH.z, -CH.x); // aponta para o centro da fábrica
-    hollowChimney(kit, CH.x, CH.z, { ...CH, seg: 28, doorAngle, doorSegs: 3 });
-    const rAt = y => CH.r0 + (CH.r1 - CH.r0) * y / CH.h;
-    // cinta de concreto no topo e cintas de ferro ao longo do fuste
-    kit.cyl('concrete', CH.x, CH.h - 0.35, CH.z, CH.r1 + 0.18, rAt(CH.h - 0.7) + 0.18, 0.7, { seg: 28, open: true, collide: false });
-    for (let y = 9; y < CH.h - 3; y += 8.5) {
-      kit.cyl('steelRust', CH.x, y, CH.z, rAt(y + 0.15) + 0.04, rAt(y - 0.15) + 0.04, 0.3, { seg: 28, open: true, collide: false });
-    }
-    // para-raios do lado oposto à porta
-    const back = doorAngle + Math.PI;
-    const bx = Math.cos(back), bz = Math.sin(back);
-    kit.beam('steelRust', V(CH.x + bx * (CH.r0 + 0.08), 0.2, CH.z + bz * (CH.r0 + 0.08)), V(CH.x + bx * (CH.r1 + 0.08), CH.h + 1.6, CH.z + bz * (CH.r1 + 0.08)), 0.05, { collide: false });
-    // degraus de ferro por dentro (escada de manutenção)
-    for (let y = 2; y < CH.h - 1; y += 1.2) {
-      const r = rAt(y) - CH.t - 0.12;
-      kit.box('steelRust', CH.x + bx * r, y, CH.z + bz * r, 0.06, 0.05, 0.5, { ry: -back, collide: false });
-    }
-    // tijolos caídos no fundo, longe da porta
-    rubble(kit, CH.x + bx * 1.8, CH.z + bz * 1.8, 1.6, 9, () => 0, ['brick']);
-  }
+  brickChimney(kit, -42, -36, { h: 50, r0: 4.4, r1: 3.2, doorAngle: Math.atan2(36, 42) });
 
   // ---------------------------------------------------------------- muro e postes
   for (const [a, b] of [[V(-85, 0, -60), V(85, 0, -60)], [V(-85, 0, -60), V(-85, 0, 70)], [V(85, 0, -60), V(85, 0, 25)]]) {
@@ -200,73 +179,4 @@ export function buildFactory(kit, settings) {
     pilot: V(4, 0, 46),
     orbit: 55,
   };
-}
-
-/**
- * Chaminé tronco-cônica oca: casca externa de tijolo, casca interna com fuligem, borda no topo
- * e uma porta na base (batentes e verga). A mesma geometria vira colisão, então o drone pode
- * cair por dentro e sair pela porta.
- */
-function hollowChimney(kit, cx, cz, o) {
-  const { h, r0, r1, t, seg, doorAngle, doorSegs, doorH } = o;
-  const step = (Math.PI * 2) / seg;
-  const d0 = ((Math.round(doorAngle / step - doorSegs / 2) % seg) + seg) % seg;
-  const isDoor = i => ((i - d0) % seg + seg) % seg < doorSegs;
-  const ys = [0, doorH, h * 0.35, h * 0.7, h];
-  const rAt = (y, inner) => r0 + (r1 - r0) * y / h - (inner ? t : 0);
-  const slope = (r0 - r1) / h;
-  const P = (a, y, inner) => { const r = rAt(y, inner); return new THREE.Vector3(cx + Math.cos(a) * r, y, cz + Math.sin(a) * r); };
-
-  const mk = (key) => ({ key, k: 1 / kit.lib.tile(key), pos: [], nor: [], uv: [], idx: [] });
-  const outer = mk('brick'), inner = mk('brickSoot');
-  // quadrilátero com normal por vértice; a ordem dos triângulos é corrigida pela normal da face
-  const quad = (g, pts, norms, uvs, faceN) => {
-    const [a, b, c] = pts;
-    const cross = new THREE.Vector3().subVectors(b, a).cross(new THREE.Vector3().subVectors(c, a));
-    const order = cross.dot(faceN) >= 0 ? [0, 1, 2, 0, 2, 3] : [0, 2, 1, 0, 3, 2];
-    const base = g.pos.length / 3;
-    pts.forEach((p, i) => { g.pos.push(p.x, p.y, p.z); g.nor.push(norms[i].x, norms[i].y, norms[i].z); g.uv.push(uvs[i][0] * g.k, uvs[i][1] * g.k); });
-    for (const i of order) g.idx.push(base + i);
-  };
-  const radial = (a, sign) => new THREE.Vector3(Math.cos(a), slope, Math.sin(a)).normalize().multiplyScalar(sign);
-
-  for (let i = 0; i < seg; i++) {
-    const a0 = i * step, a1 = (i + 1) * step;
-    for (let j = 0; j < ys.length - 1; j++) {
-      if (j === 0 && isDoor(i)) continue;
-      const y0 = ys[j], y1 = ys[j + 1];
-      for (const [g, inn, sign] of [[outer, false, 1], [inner, true, -1]]) {
-        const n0 = radial(a0, sign), n1 = radial(a1, sign);
-        const pts = [P(a0, y0, inn), P(a1, y0, inn), P(a1, y1, inn), P(a0, y1, inn)];
-        const r = rAt(0, inn);
-        quad(g, pts, [n0, n1, n1, n0], [[a0 * r, y0], [a1 * r, y0], [a1 * r, y1], [a0 * r, y1]], radial((a0 + a1) / 2, sign));
-      }
-    }
-    // borda do topo
-    const up = new THREE.Vector3(0, 1, 0);
-    quad(inner, [P(a0, h, false), P(a1, h, false), P(a1, h, true), P(a0, h, true)], [up, up, up, up],
-      [[a0 * r1, 0], [a1 * r1, 0], [a1 * r1, t], [a0 * r1, t]], up);
-    // verga (parte de baixo da parede acima da porta)
-    if (isDoor(i)) {
-      const dn = new THREE.Vector3(0, -1, 0);
-      quad(inner, [P(a0, doorH, false), P(a1, doorH, false), P(a1, doorH, true), P(a0, doorH, true)], [dn, dn, dn, dn],
-        [[a0 * r0, 0], [a1 * r0, 0], [a1 * r0, t], [a0 * r0, t]], dn);
-    }
-  }
-  // batentes da porta
-  for (const [a, dir] of [[d0 * step, 1], [(d0 + doorSegs) * step, -1]]) {
-    const n = new THREE.Vector3(-Math.sin(a), 0, Math.cos(a)).multiplyScalar(dir);
-    quad(inner, [P(a, 0, false), P(a, doorH, false), P(a, doorH, true), P(a, 0, true)], [n, n, n, n],
-      [[0, 0], [0, doorH], [t, doorH], [t, 0]], n);
-  }
-
-  for (const g of [outer, inner]) {
-    const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(g.pos, 3));
-    geo.setAttribute('normal', new THREE.Float32BufferAttribute(g.nor, 3));
-    geo.setAttribute('uv', new THREE.Float32BufferAttribute(g.uv, 2));
-    geo.setIndex(g.idx);
-    kit.addGeometry(g.key, geo, new THREE.Matrix4());
-    kit.collider({ type: 'tris', geometry: geo }, 0, 0, 0, null);
-  }
 }

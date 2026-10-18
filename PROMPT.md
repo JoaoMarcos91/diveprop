@@ -67,16 +67,17 @@ Simular um quadricóptero em X com passo fixo (padrão 500 Hz, configurável):
 - FPV com **ângulo de inclinação (uptilt)**, **FOV**, **fisheye** (distorção barrel em pós-processo), efeito **analógico** (ruído, scanlines, perda de sinal por distância/obstáculos) ou digital limpo.
 - Terceira pessoa (distância/altura/suavização) e linha de visada (piloto no chão).
 
-## Cenários (8)
+## Cenários (9)
 
 1. **Fábrica Abandonada** — galpão de tijolos com janelas quebradas, telhado com buracos, treliças, mezanino, contêineres, tanques, entulho, mato e uma chaminé oca de 50 m com porta na base (mergulho por dentro).
 2. **Campos e Árvores** — terreno ondulado, sebes, árvores frondosas e pinheiros, estrada de terra, casa de fazenda e celeiro, fardos de feno, postes com fios.
 3. **Prédio Inacabado** — esqueleto de concreto de 12 andares (lajes, pilares, escada, vergalhões), guindaste, prédios vizinhos, estacionamento — perfeito para *dives*.
 4. **Pista de Corrida** — parque com portões de corrida em circuito, cronômetro de volta, melhor volta e ordem dos portões.
 5. **Praia** — enseada com mar animado e espuma, coqueiros, dunas, píer de madeira (voar entre os pilares), farol num promontório de pedras, barcos ancorados, quiosques.
-6. **Vale nas Montanhas** — montanhas altas, rio sinuoso, lago com cachoeira saindo de um penhasco, ponte de concreto alta, cabana e floresta de pinheiros (*mountain surfing*).
+6. **Vale nas Montanhas** — montanhas de até ~400 m (pico aplainado com plataforma e repetidora de vídeo para dives longos), rio sinuoso, lago com cachoeira saindo de um penhasco, ponte de concreto alta, cabana e floresta de pinheiros (*mountain surfing*).
 7. **Pedreira** — cava em bancadas com lago no fundo, britador elevado, esteiras transportadoras longas, pilhas de brita, silos, caminhões e escavadeira.
 8. **Ginásio Indoor** — quadra coberta com pista de tiny whoop cronometrada, arquibancada, cordas e cestas de basquete com aro vazado.
+9. **Usina Abandonada** — termelétrica a carvão com duas chaminés de tijolo ocas (85 e 100 m, porta na base), torre de escada de 20 andares com poço central aberto para *ladder dive* (entra pelo telhado, sai pela porta do térreo), galeria inclinada da esteira de carvão para voar por dentro, casa da caldeira, salão das turbinas, dutos, caixa d'água e subestação.
 
 Cada cenário: céu HDRI próprio (sol calculado a partir do pixel mais brilhante do HDRI para alinhar sombras), neblina casando com o horizonte, ponto de spawn e posição do piloto.
 

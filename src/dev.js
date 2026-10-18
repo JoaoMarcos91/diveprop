@@ -36,7 +36,7 @@ export function startDev(game) {
 
   async function run(cmd) {
     switch (cmd.action) {
-      case 'load': { const t0 = performance.now(); await game.startScene(cmd.scene); log('loaded', { scene: cmd.scene, ms: Math.round(performance.now() - t0), colliders: game.kit.colliderCount, colTris: game.kit.colTris, meshes: game.kit.meshes.length }); break; }
+      case 'load': { const t0 = performance.now(); await game.startScene(cmd.scene); log('loaded', { scene: cmd.scene, ms: Math.round(performance.now() - t0), colliders: game.kit.colliderCount, colTris: game.kit.colTris, meshes: game.kit.meshes.length, summit: game.kit.summit, stair: game.kit.stair }); break; }
       case 'menu': game.toMainMenu(); break;
       case 'resume': if (game.state !== 'flying') game.resume(); break;
       case 'set': game.settings.set(cmd.path, cmd.value); break;

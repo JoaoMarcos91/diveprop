@@ -76,6 +76,7 @@ export const MATERIALS = {
   windowGlow:     { color: '#dfeefa', emissive: '#b8d4ea', roughness: 0.3 },
   steelBlue:      { color: '#2e4d6b', roughness: 0.5, metalness: 0.6 },
   belt:           { color: '#222222', roughness: 0.95 },
+  coal:           { tex: 'gravel', tile: 2, tint: '#3c3c3e', fallback: '#202022' },
 };
 
 export class AssetLib {

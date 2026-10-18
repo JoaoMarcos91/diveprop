@@ -22,17 +22,18 @@ export function buildValley(kit, settings) {
   const R = kit.rand;
   const rz0 = riverZ(LAKE.x);
 
-  const height = (x, z) => {
+  const rawHeight = (x, z) => {
     const rz = riverZ(x);
     const d = Math.abs(z - rz);
-    const mount = ridged(x / 260, z / 260) * 230 + fbm(x / 60, z / 60, 3, 4) * 8;
+    // montanhas de até ~400 m (dives longos), com encostas largas para não virarem paredões
+    const mount = ridged(x / 260, z / 260) * 450 + fbm(x / 60, z / 60, 3, 4) * 12;
     let floor = 2.2 + fbm(x / 80, z / 80, 3, 11) * 0.8;
     // leito do rio (fundo e com margens bem definidas, sem "listras" na linha d'água)
     floor = THREE.MathUtils.lerp(-3.2, floor, smooth(14, 19, d));
     // lago
     const ld = Math.hypot(x - LAKE.x, (z - rz0) * 0.9);
     floor = Math.min(floor, THREE.MathUtils.lerp(-4, floor, smooth(LAKE.r * 0.7, LAKE.r * 1.05, ld)));
-    let h = THREE.MathUtils.lerp(floor, mount, smooth(28, 190, Math.min(d, ld)));
+    let h = THREE.MathUtils.lerp(floor, mount, smooth(30, 240, Math.min(d, ld)));
     // planalto do penhasco, a oeste do lago (degrau íngreme e irregular)
     const cx = CLIFF_X + fbm(z / 30, 3.3, 2, 17) * 10 * smooth(4, 20, Math.abs(z - rz0));
     const cliff = smooth(cx + 6, cx - 6, x);
@@ -40,10 +41,29 @@ export function buildValley(kit, settings) {
     h = Math.max(h, cliff * (PLATEAU + Math.abs(fbm(x / 40, z / 40, 2, 5)) * 2));
     return h;
   };
+  // pico para dives: o ponto mais alto perto do vale tem a ponta aparada num platô, onde fica
+  // a plataforma (assim nenhuma agulha de rocha fica acima dela)
+  let peak = null;
+  for (let x = -240; x <= 240; x += 6) for (let z = -400; z <= 400; z += 6) {
+    const d = Math.abs(z - riverZ(x));
+    if (d < 60 || d > 280) continue;
+    const h = rawHeight(x, z);
+    if (!peak || h > peak.h) peak = { x, z, h };
+  }
+  for (let x = peak.x - 6; x <= peak.x + 6; x++) for (let z = peak.z - 6; z <= peak.z + 6; z++) {
+    const h = rawHeight(x, z);
+    if (h > peak.h) peak = { x, z, h };
+  }
+  const padY = peak.h - 3;
+  const height = (x, z) => {
+    const h = rawHeight(x, z);
+    const dd = Math.hypot(x - peak.x, z - peak.z);
+    return dd < 16 ? Math.min(h, THREE.MathUtils.lerp(padY, h + 50, smooth(7, 16, dd))) : h;
+  };
   const splat = (x, z) => {
     const h = height(x, z);
     const slope = Math.abs(height(x + 2, z) - height(x - 2, z)) + Math.abs(height(x, z + 2) - height(x, z - 2));
-    return Math.min(1, smooth(1.4, 3.4, slope) + smooth(110, 170, h) + smooth(2.0, 0.5, h) * 0.6);
+    return Math.min(1, smooth(1.4, 3.4, slope) + smooth(170, 260, h) + smooth(2.0, 0.5, h) * 0.6);
   };
   const tint = (x, z) => 0.85 + 0.2 * fbm(x / 70, z / 70, 2, 13);
   kit.terrain({ size: 1300, res: 300, height, splat, tint, texA: 'grass', texB: 'rock' });
@@ -140,7 +160,7 @@ export function buildValley(kit, settings) {
     const s = 0.8 + R() * 3.2;
     kit.rock('rockGray', x, H(x, z) + s * 0.15, z, s * 1.4, s, s * 1.2);
   }
-  for (const p of scatter(R, 30, -600, -600, 600, 600, (x, z) => { const h = H(x, z); return h > 40 && h < 140; })) {
+  for (const p of scatter(R, 40, -600, -600, 600, 600, (x, z) => { const h = H(x, z); return h > 40 && h < 280; })) {
     const s = 4 + R() * 9;
     kit.rock('rockGray', p.x, H(p.x, p.z) + s * 0.1, p.z, s * 1.3, s * 0.8, s, { detail: 1 });
   }
@@ -149,7 +169,7 @@ export function buildValley(kit, settings) {
   const trees = [];
   const okTree = (x, z) => {
     const h = H(x, z);
-    if (h < 1.5 || h > 120) return false;
+    if (h < 1.5 || h > 230) return false;
     const slope = Math.abs(H(x + 3, z) - H(x - 3, z)) + Math.abs(H(x, z + 3) - H(x, z - 3));
     return slope < 11 && Math.abs(x - BRIDGE_X) > 8 && Math.hypot(x - 30, z - riverZ(30) - 48) > 9;
   };
@@ -162,10 +182,27 @@ export function buildValley(kit, settings) {
     kit.grass(scatter(R, Math.round(6000 * veg), -200, -200, 260, 200, (x, z) => { const d = Math.abs(z - riverZ(x)); const h = H(x, z); return d > 20 && h > 0.8 && h < 18; }).map(p => ({ ...p, s: 0.6 + R() * 0.6 })));
   }
 
+  // ---------------------------------------------------------------- plataforma do pico (dives)
+  const relays = [];
+  {
+    const { x, z } = peak;
+    kit.box('concrete', x, padY - 1.75, z, 4.4, 4, 4.4);
+    kit.cyl('paintWhite', x + 1.7, padY + 3, z + 1.7, 0.06, 0.08, 6, { seg: 6 });
+    kit.box('gateOrange', x + 2.4, padY + 5.2, z + 1.7, 1.4, 1.4, 0.04, { collide: false });
+    // repetidora de vídeo: mastro com antenas e caixa (o sinal vale a partir daqui também)
+    kit.cyl('steel', x - 1.6, padY + 3.5, z - 1.6, 0.05, 0.07, 7, { seg: 6 });
+    kit.box('paintWhite', x - 1.6, padY + 1.4, z - 1.25, 0.5, 0.6, 0.25);
+    for (const a of [0, 2.1, 4.2]) kit.box('paintWhite', x - 1.6 + Math.cos(a) * 0.2, padY + 6.6, z - 1.6 + Math.sin(a) * 0.2, 0.08, 0.9, 0.08, { collide: false });
+    kit.box('lampRed', x - 1.6, padY + 7.1, z - 1.6, 0.14, 0.14, 0.14, { collide: false });
+    kit.summit = { x, z, h: padY + 0.25 };
+    relays.push({ x: x - 1.6, y: padY + 7.6, z: z - 1.6 });
+  }
+
   const sx = -20, sz = riverZ(-20) + 32;
   return {
     spawn: { pos: V(sx, H(sx, sz) + 0.25, sz), yaw: Math.PI * 0.5 },
     pilot: V(sx + 3, 0, sz + 3),
+    relays,
     orbit: 80,
   };
 }
