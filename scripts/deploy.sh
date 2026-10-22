@@ -10,7 +10,7 @@ cd dist
 rm -rf .git
 git init -q -b gh-pages
 git add -A
-git commit -q -m "Publicar build $(date '+%Y-%m-%d %H:%M')" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+git commit -q -m "Publicar build $(date '+%Y-%m-%d %H:%M')"
 git push -q -f "$ORIGIN" gh-pages
 rm -rf .git
 echo "Publicado no branch gh-pages."
