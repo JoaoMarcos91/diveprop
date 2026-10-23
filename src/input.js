@@ -46,7 +46,12 @@ export class Input {
     });
     addEventListener('keyup', e => this.keys.delete(e.code));
     addEventListener('blur', () => this.keys.clear());
-    addEventListener('gamepadconnected', e => { this.onConnect?.(e.gamepad); });
+    this.connectEvents = []; // avisos de "controle conectado" do navegador (diagnóstico)
+    addEventListener('gamepadconnected', e => {
+      const g = e.gamepad;
+      this.connectEvents.push({ id: g.id, mapping: g.mapping, buttons: g.buttons.length, axes: g.axes.length });
+      this.onConnect?.(g);
+    });
     addEventListener('gamepaddisconnected', e => {
       if (e.gamepad.id === this.activeId) this.activeId = null;
       this.onDisconnect?.(e.gamepad);
@@ -57,6 +62,11 @@ export class Input {
     // alguns sistemas (Linux/Android) listam os sensores de movimento e o touchpad do
     // DualShock/DualSense como "controles" separados: não são controles de verdade
     return navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && !/motion sensors|touchpad/i.test(g.id)) : [];
+  }
+
+  /** Tudo que o navegador lista, sem filtro (diagnóstico). */
+  rawGamepads() {
+    return navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
   }
 
   /** Controle escolhido nas configurações, senão o último que teve atividade. */

@@ -6,6 +6,7 @@ import { buttonName, bindingName, axisName, hapticsSupport } from './controllers
 import { estimateTopSpeed, tuneTopSpeed, thrustToWeight, hoverThrottle } from './flightPerf.js';
 import { t, getLang, LANGS } from './i18n.js';
 import { cloudMessage } from './cloud.js';
+import { isTouchDevice } from './touch.js';
 
 const ACTION_NAMES = {
   arm: 'Armar / desarmar', reset: 'Resetar drone', camera: 'Trocar câmera', mode: 'Modo de voo', pause: 'Pausa / menu',
@@ -582,7 +583,10 @@ export class UI {
       <p class="hint" data-pad-info></p>
       <div class="axes"></div><div class="btns"></div>
       <div class="bar-inline"><button class="small" data-cal>${te('Calibrar sticks')}</button><button class="small" data-cal-reset>${te('Zerar calibração')}</button></div>
-      <p class="hint" data-cal-msg></p>`;
+      <p class="hint" data-cal-msg></p>
+      <details class="pad-diag"><summary>${te('Diagnóstico (se o controle não aparece)')}</summary>
+        <pre data-diag></pre>
+        <button class="small" data-copy-diag>${te('Copiar diagnóstico')}</button></details>`;
     div.querySelector('[data-pad-sel]').addEventListener('change', e => this.settings.set('input.gamepadIndex', Number(e.target.value)));
     div.querySelector('[data-cal]').addEventListener('click', () => {
       if (!this.game.input.findGamepad()) return this.toast(t('Conecte o controle primeiro'));
@@ -593,10 +597,16 @@ export class UI {
       this.toast(t('Calibração zerada'));
     });
     const axesEl = div.querySelector('.axes'), btnsEl = div.querySelector('.btns'), info = div.querySelector('[data-pad-info]'), calMsg = div.querySelector('[data-cal-msg]');
+    const diag = div.querySelector('.pad-diag'), diagText = div.querySelector('[data-diag]');
+    div.querySelector('[data-copy-diag]').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(this.padDiagnostics()); this.toast(t('Diagnóstico copiado — cole numa mensagem')); }
+      catch { this.toast(t('Não deu para copiar: selecione o texto e copie')); }
+    });
     let built = 0;
     this.live.push(() => {
+      if (diag.open) { const d = this.padDiagnostics(); if (diagText.textContent !== d) diagText.textContent = d; }
       const gp = this.game.input.findGamepad();
-      if (!gp) { info.textContent = t('Nenhum controle detectado. Conecte via USB e aperte qualquer botão.'); return; }
+      if (!gp) { info.textContent = t('Nenhum controle detectado. Conecte (USB ou Bluetooth) e, com o jogo aberto, aperte um botão como ✕ ou R1.'); return; }
       const pi = this.game.input.padInfo;
       const txt = `${pi?.model || t('Controle')} · ${gp.mapping === 'standard' ? t('mapeamento padrão') : t('mapeamento próprio — confira os canais com "Detectar"')} · ${gp.id}`;
       if (info.textContent !== txt) info.textContent = txt;
@@ -638,6 +648,23 @@ export class UI {
       }
     });
     sec.appendChild(div);
+  }
+
+  /** O que o navegador mostra de controles e de tela, para descobrir por que um controle não aparece. */
+  padDiagnostics() {
+    const inp = this.game.input, yes = v => (v ? t('sim') : t('não'));
+    const raw = inp.rawGamepads?.() || [];
+    const used = new Set((inp.listGamepads?.() || []).map(g => g.index));
+    const lines = [
+      `Gamepad API: ${yes(!!navigator.getGamepads)}`,
+      `${t('Controles que o navegador mostra')}: ${raw.length}`,
+      ...raw.map(g => `  #${g.index} "${g.id}" · mapping "${g.mapping || '-'}" · ${g.buttons.length} ${t('botões')} · ${g.axes.length} ${t('eixos')}${used.has(g.index) ? '' : ` · (${t('ignorado: sensor/touchpad')})`}`),
+      `${t('Avisos de conexão recebidos')}: ${inp.connectEvents?.length ?? 0}${inp.connectEvents?.length ? ` (${inp.connectEvents.map(e => `"${e.id}"`).join(', ')})` : ''}`,
+      `${t('Controle em uso')}: ${inp.gamepad ? `"${inp.gamepad.id}" (${inp.padInfo?.model || '?'})` : '—'}`,
+      `${t('Celular/tablet')}: ${yes(isTouchDevice())} · pointer coarse ${yes(matchMedia('(pointer: coarse)').matches)} · any-pointer fine ${yes(matchMedia('(any-pointer: fine)').matches)} · ${t('toques')} ${navigator.maxTouchPoints || 0}`,
+      `${t('Navegador')}: ${navigator.userAgent}`,
+    ];
+    return lines.join('\n');
   }
 
   custom_rateCurves(sec) {

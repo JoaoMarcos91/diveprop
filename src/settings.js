@@ -1,5 +1,6 @@
 // Todas as configurações do jogo: valores padrão, presets, schema da tela de
 // configurações e persistência em localStorage.
+import { isTouchDevice } from './touch.js';
 
 // "fpvsim" é o nome antigo do jogo: a chave fica igual para ninguém perder as configurações
 const STORAGE_KEY = 'fpvsim.settings.v1';
@@ -396,9 +397,8 @@ export class Settings {
    * difíceis em Acro); placa de vídeo forte começa no Alto. O resto fica no Médio.
    */
   deviceDefaults() {
-    const touchOnly = (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !matchMedia('(any-pointer: fine)').matches;
     let preset = null;
-    if (touchOnly) { preset = 'low'; this.data.fc.mode = 'angle'; }
+    if (isTouchDevice()) { preset = 'low'; this.data.fc.mode = 'angle'; }
     else if (strongGpu()) preset = 'high';
     if (preset) Object.assign(this.data.graphics, stripLabel(GRAPHICS_PRESETS[preset]), { preset });
   }

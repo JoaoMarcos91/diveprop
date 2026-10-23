@@ -3,9 +3,17 @@
 // Stick esquerdo: ↕ throttle (fica onde você soltar, como num rádio) · ↔ yaw (volta ao centro).
 // Stick direito: ↕ pitch · ↔ roll (voltam ao centro).
 
-/** Aparelho só de toque (celular/tablet): tem tela de toque e nenhum mouse/trackpad. */
-export const isTouchDevice = () =>
-  (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) && !matchMedia('(any-pointer: fine)').matches;
+/**
+ * Celular ou tablet: tem tela de toque e ela é o ponteiro principal (ou o navegador diz que é
+ * celular). Não dá para usar "nenhum mouse ligado": no Android o touchpad do DualShock 4 /
+ * DualSense conectado por Bluetooth vira um mouse, e o jogo esconderia os controles de toque e o
+ * botão de menu justo quando o controle conecta. Notebook com tela de toque continua de fora.
+ */
+export function isTouchDevice() {
+  if (!(navigator.maxTouchPoints > 0 || 'ontouchstart' in window)) return false;
+  const mobile = navigator.userAgentData?.mobile || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  return !!mobile || matchMedia('(pointer: coarse)').matches;
+}
 
 import { t } from './i18n.js';
 
