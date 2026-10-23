@@ -60,8 +60,10 @@ export class Input {
 
   listGamepads() {
     // alguns sistemas (Linux/Android) listam os sensores de movimento e o touchpad do
-    // DualShock/DualSense como "controles" separados: não são controles de verdade
-    return navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && !/motion sensors|touchpad/i.test(g.id)) : [];
+    // DualShock/DualSense como "controles" separados, sem mapeamento padrão: esses ficam de
+    // fora. Com mapeamento padrão é controle de verdade mesmo com "Touchpad" no nome — o
+    // Android de alguns Samsung chama o próprio DualShock 4 de "Wireless Controller Touchpad".
+    return navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && (g.mapping === 'standard' || !/motion sensors|touchpad/i.test(g.id))) : [];
   }
 
   /** Tudo que o navegador lista, sem filtro (diagnóstico). */
