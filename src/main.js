@@ -166,6 +166,7 @@ class Game {
 
   async startScene(id) {
     this.audio.ensure();
+    this.keepAwake(true);
     this.state = 'loading';
     await this.loadScene(id);
     this.ui.hide();
@@ -238,6 +239,28 @@ class Game {
     this.osd.messages = []; // avisos já na tela estavam no idioma anterior
   }
 
+  /** Liga/desliga a tela dividida dos óculos VR (menu de pausa, tecla V). */
+  toggleVR() {
+    const on = !this.settings.get('camera.vr');
+    this.settings.set('camera.vr', on);
+    this.osd.flash(on ? t('Óculos VR ligado') : t('Óculos VR desligado'), 1.5);
+    if (!on) return;
+    // tela cheia e paisagem travada (Android/Chrome); no iPhone só pela tela inicial
+    const el = document.documentElement;
+    if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen().then(() => screen.orientation?.lock?.('landscape')).catch(() => {});
+    if (!this.input.gamepad) this.ui.toast(t('Conecte um controle por Bluetooth (PS4, PS5, Xbox…) para jogar com os óculos VR.'), 5000);
+  }
+
+  /** Não deixa a tela do celular apagar durante o voo (Screen Wake Lock). */
+  keepAwake(on) {
+    if (!on) { this.wakeLock?.release().catch(() => {}); this.wakeLock = null; return; }
+    if (this.wakeLock || !navigator.wakeLock || document.hidden) return;
+    navigator.wakeLock.request('screen').then(l => {
+      this.wakeLock = l;
+      l.addEventListener?.('release', () => { if (this.wakeLock === l) this.wakeLock = null; });
+    }).catch(() => {});
+  }
+
   /** Nome do botão/chave de uma ação, para as mensagens na tela. */
   actionLabel(action, fallback) {
     const name = bindingName(this.input.padInfo?.family || 'playstation', this.settings.data.input.buttons[action]);
@@ -252,6 +275,7 @@ class Game {
   }
 
   resume() {
+    this.keepAwake(true);
     this.ui.hide();
     this.state = 'flying';
     this.last = performance.now();
@@ -265,6 +289,7 @@ class Game {
   }
 
   toMainMenu() {
+    this.keepAwake(false);
     this.drone.respawn();
     this.state = 'menu';
     this.ui.history = [];
@@ -317,6 +342,11 @@ class Game {
 
     const input = this.input;
     this.onFrame?.(dt);
+    // óculos VR: tela dividida só voando (menus e carregamento ficam em tela cheia normal)
+    const camSet = this.settings.data.camera;
+    this.vrActive = camSet.vr && (this.state === 'flying' || this.state === 'paused');
+    this.r.setVR(this.vrActive);
+    this.osd.setVR(this.vrActive, camSet.vrScale, camSet.vrShift);
     this.touch.update();
     const sticks = input.poll(dt);
     if (this.ui.isOpen()) this.ui.tick(dt, input);
@@ -389,9 +419,10 @@ class Game {
     // pós-processamento; fora da câmera FPV o passe é só uma cópia com tone mapping. Direto na
     // tela, alguns Safari usam profundidade de 16 bits e a água "briga" com o fundo raso.
     this.scene.fog.color.copy(this.fogLinear);
+    const vr = { scale: cam.vrScale, shift: cam.vrShift, distort: cam.vrDistort };
     this.r.render(this.scene, this.camera, fpv
-      ? { active: true, fisheye: cam.fisheye, mode: fxMode, signal: this.signal, strength: cam.fxStrength, time: this.time, vignette: fxMode === 0 ? 0.15 : 0.4 }
-      : { active: true, fisheye: 0, mode: 0, signal: 1, strength: 0, time: this.time, vignette: 0 });
+      ? { active: true, fisheye: cam.fisheye, mode: fxMode, signal: this.signal, strength: cam.fxStrength, time: this.time, vignette: fxMode === 0 ? 0.15 : 0.4, vr }
+      : { active: true, fisheye: 0, mode: 0, signal: 1, strength: 0, time: this.time, vignette: 0, vr });
     this.stats.renderMs = performance.now() - tr;
     if (this.shotRequest) { const fn = this.shotRequest; this.shotRequest = null; fn(this.r.dom); }
 
@@ -420,6 +451,7 @@ class Game {
           else drone.tryArm(sticks.throttle);
           break;
         case 'reset': this.respawn(); break;
+        case 'vr': this.toggleVR(); break;
         case 'camera': {
           const m = CAMS[(CAMS.indexOf(s.get('camera.mode')) + 1) % CAMS.length];
           s.set('camera.mode', m);

@@ -1,7 +1,30 @@
 // OSD estilo Betaflight feito com elementos HTML.
 // (Um canvas 2D redesenhado a cada frame custava ~11 FPS num notebook antigo; com DOM só
 // os textos que mudam são repintados, e no máximo ~15 vezes por segundo.)
+// Nos óculos VR o OSD ganha uma cópia: uma em cada metade da tela, alinhada com a imagem.
 import { t } from './i18n.js';
+
+const MARKUP = `
+  <div class="osd-cross"></div>
+  <div class="osd-tl"><b data-k="arm"></b><span data-k="mode"></span><span data-k="turtle"></span></div>
+  <div class="osd-tc"><span data-k="timer"></span><span data-k="lap" class="lap"></span></div>
+  <div class="osd-tr"><span data-k="lq"></span><span data-k="cam" class="dim"></span></div>
+  <div class="osd-bl"><b data-k="volt"></b><span data-k="mah"></span></div>
+  <div class="osd-bc"><span data-k="thr"></span></div>
+  <div class="osd-br"><b data-k="speed"></b><span data-k="alt"></span></div>
+  <div class="osd-fps" data-k="fps"></div>
+  <div class="osd-msgs"></div>
+  <div class="osd-stick l"><i></i></div><div class="osd-stick r"><i></i></div>`;
+
+/** Monta o OSD dentro de `root` e devolve os elementos que ele atualiza. */
+function buildPart(root) {
+  root.innerHTML = MARKUP;
+  const el = {};
+  for (const e of root.querySelectorAll('[data-k]')) el[e.dataset.k] = e;
+  const sticks = [...root.querySelectorAll('.osd-stick')];
+  return { root, el, msgBox: root.querySelector('.osd-msgs'), cross: root.querySelector('.osd-cross'), sticks, dots: sticks.map(s => s.querySelector('i')) };
+}
+
 export class OSD {
   constructor(root, settings) {
     this.root = root;
@@ -9,30 +32,42 @@ export class OSD {
     this.messages = [];
     this.last = {};
     this.lastText = 0;
-    root.innerHTML = `
-      <div class="osd-cross"></div>
-      <div class="osd-tl"><b data-k="arm"></b><span data-k="mode"></span><span data-k="turtle"></span></div>
-      <div class="osd-tc"><span data-k="timer"></span><span data-k="lap" class="lap"></span></div>
-      <div class="osd-tr"><span data-k="lq"></span><span data-k="cam" class="dim"></span></div>
-      <div class="osd-bl"><b data-k="volt"></b><span data-k="mah"></span></div>
-      <div class="osd-bc"><span data-k="thr"></span></div>
-      <div class="osd-br"><b data-k="speed"></b><span data-k="alt"></span></div>
-      <div class="osd-fps" data-k="fps"></div>
-      <div class="osd-msgs"></div>
-      <div class="osd-stick l"><i></i></div><div class="osd-stick r"><i></i></div>`;
-    this.el = {};
-    for (const e of root.querySelectorAll('[data-k]')) this.el[e.dataset.k] = e;
-    this.msgBox = root.querySelector('.osd-msgs');
-    this.cross = root.querySelector('.osd-cross');
-    this.sticks = [...root.querySelectorAll('.osd-stick')];
-    this.dots = this.sticks.map(s => s.querySelector('i'));
+    this.parts = [buildPart(root)];
+    this.vrKey = '';
+  }
+
+  /** Óculos VR: duas cópias do OSD, cada uma sobre a imagem de um olho. */
+  setVR(on, scale = 1, shift = 0) {
+    const key = on ? `${scale}|${shift}` : '';
+    if (key === this.vrKey) return;
+    this.vrKey = key;
+    if (on && this.parts.length < 2) {
+      const r2 = document.createElement('div');
+      r2.id = 'osd-r';
+      r2.className = this.root.className;
+      this.root.after(r2);
+      this.parts.push(buildPart(r2));
+      this.last = {}; // a cópia nova ainda está vazia: reescreve tudo
+      this.msgKey = null;
+    }
+    document.body.classList.toggle('vr-on', on);
+    this.parts.forEach((p, i) => {
+      p.root.style.transform = on ? `translateX(${((i ? -1 : 1) * shift * 50).toFixed(2)}vw) scale(${scale})` : '';
+      if (i) p.root.hidden = !on;
+    });
   }
 
   set(k, text, color) {
-    const e = this.el[k];
-    if (this.last[k] !== text) { e.textContent = text; this.last[k] = text; }
     const ck = k + ':c';
-    if (color !== undefined && this.last[ck] !== color) { e.style.color = color; this.last[ck] = color; }
+    const newText = this.last[k] !== text, newColor = color !== undefined && this.last[ck] !== color;
+    if (!newText && !newColor) return;
+    for (const p of this.parts) {
+      const e = p.el[k];
+      if (newText) e.textContent = text;
+      if (newColor) e.style.color = color;
+    }
+    if (newText) this.last[k] = text;
+    if (newColor) this.last[ck] = color;
   }
 
   flash(text, seconds = 1.6, color = '#ffffff') {
@@ -47,26 +82,30 @@ export class OSD {
     const key = this.messages.map(m => m.text + m.color).join('|');
     if (key === this.msgKey) return;
     this.msgKey = key;
-    this.msgBox.innerHTML = '';
-    for (const m of this.messages) {
-      const d = document.createElement('div');
-      d.textContent = m.text;
-      d.style.color = m.color;
-      this.msgBox.appendChild(d);
+    for (const p of this.parts) {
+      p.msgBox.innerHTML = '';
+      for (const m of this.messages) {
+        const d = document.createElement('div');
+        d.textContent = m.text;
+        d.style.color = m.color;
+        p.msgBox.appendChild(d);
+      }
     }
   }
 
   draw(st) {
     const set = this.settings.data;
     const flying = !!st.drone && set.game.osd;
-    this.root.classList.toggle('on', flying);
-    this.cross.style.display = flying && set.camera.mode === 'fpv' ? '' : 'none';
     const showSticks = flying && set.game.showSticks;
-    this.sticks.forEach(s => { s.style.display = showSticks ? '' : 'none'; });
-    if (showSticks) {
-      const s = st.sticks;
-      this.dots[0].style.transform = `translate(${(s.yaw * 3.3).toFixed(2)}vh, ${(-(s.throttle * 2 - 1) * 3.3).toFixed(2)}vh)`;
-      this.dots[1].style.transform = `translate(${(s.roll * 3.3).toFixed(2)}vh, ${(-s.pitch * 3.3).toFixed(2)}vh)`;
+    const s = st.sticks;
+    for (const p of this.parts) {
+      p.root.classList.toggle('on', flying);
+      p.cross.style.display = flying && set.camera.mode === 'fpv' ? '' : 'none';
+      p.sticks.forEach(el => { el.style.display = showSticks ? '' : 'none'; });
+      if (showSticks) {
+        p.dots[0].style.transform = `translate(${(s.yaw * 3.3).toFixed(2)}vh, ${(-(s.throttle * 2 - 1) * 3.3).toFixed(2)}vh)`;
+        p.dots[1].style.transform = `translate(${(s.roll * 3.3).toFixed(2)}vh, ${(-s.pitch * 3.3).toFixed(2)}vh)`;
+      }
     }
     const now = performance.now();
     if (now - this.lastText < 66) return;

@@ -80,8 +80,9 @@ export const CONTROL_LAYOUTS = {
 };
 // O que um preset do jogador guarda (o "setup" do drone)
 export const PRESET_KEYS = ['drone', 'battery', 'rates', 'fc', 'camera'];
-// Ficam só neste aparelho (não vão para a conta): gráficos e controles de toque
-const DEVICE_INPUT_KEYS = ['touch', 'touchSize', 'gamepadIndex'];
+// Ficam só neste aparelho (não vão para a conta nem para os presets): gráficos, controles de
+// toque e óculos VR
+const DEVICE_KEYS = { input: ['touch', 'touchSize', 'gamepadIndex'], camera: ['vr', 'vrScale', 'vrShift', 'vrDistort'] };
 
 // O que fica salvo por controle (cada controle/rádio lembra o próprio mapeamento)
 export const PROFILE_KEYS = ['layout', 'throttle', 'yaw', 'pitch', 'roll', 'throttleMode', 'deadband', 'throttleDeadband', 'calib', 'buttons', 'armSwitch'];
@@ -127,6 +128,7 @@ export const DEFAULTS = {
   camera: {
     mode: 'fpv', uptilt: 25, fov: 118, fisheye: 0.35, fx: 'analog', fxStrength: 0.6,
     chaseDist: 2.4, chaseHeight: 0.7, chaseSmooth: 7, losHeight: 1.7, losZoom: true, shake: 0.4,
+    vr: false, vrScale: 0.9, vrShift: 0, vrDistort: 0.2, // óculos VR (tela dividida)
   },
   graphics: {
     preset: 'medium', ...stripLabel(GRAPHICS_PRESETS.medium),
@@ -290,6 +292,12 @@ export const SCHEMA = [
       { path: 'camera.fxStrength', label: 'Intensidade do efeito', type: 'range', min: 0, max: 1, step: 0.01 },
       { path: 'camera.shake', label: 'Vibração da câmera', type: 'range', min: 0, max: 1, step: 0.01 },
     ] },
+    { title: 'Óculos VR (celular numa VR box)', fields: [
+      { path: 'camera.vr', label: 'Tela dividida para óculos VR', type: 'toggle', help: 'Divide a tela em duas imagens iguais (como nos óculos FPV de verdade) para usar o celular numa VR box, jogando com um controle Bluetooth. Também liga no menu de pausa ou com a tecla V.' },
+      { path: 'camera.vrScale', label: 'Tamanho da imagem', type: 'range', min: 0.5, max: 1, step: 0.01, ...pct },
+      { path: 'camera.vrShift', label: 'Distância entre as imagens', type: 'range', min: -0.2, max: 0.2, step: 0.005, ...pct, help: 'Aproxima (+) ou afasta (−) as duas imagens para ficarem no centro de cada lente.' },
+      { path: 'camera.vrDistort', label: 'Correção da lente', type: 'range', min: 0, max: 0.6, step: 0.01, help: 'Compensa a distorção das lentes da VR box (linhas retas devem parecer retas).' },
+    ] },
     { title: 'Terceira pessoa / Linha de visada', fields: [
       { path: 'camera.chaseDist', label: 'Distância', type: 'range', min: 0.5, max: 10, step: 0.1, unit: 'm' },
       { path: 'camera.chaseHeight', label: 'Altura', type: 'range', min: -1, max: 5, step: 0.1, unit: 'm' },
@@ -426,16 +434,18 @@ export class Settings {
   /** O que vai para a conta: tudo menos o que é deste aparelho. */
   syncData() {
     const { graphics, ...rest } = structuredClone(this.data);
-    for (const k of DEVICE_INPUT_KEYS) delete rest.input[k];
+    for (const [sec, keys] of Object.entries(DEVICE_KEYS)) for (const k of keys) delete rest[sec][k];
     return { v: 1, ...rest };
   }
 
-  /** Aplica o que veio da conta, mantendo gráficos e controles de toque deste aparelho. */
+  /** Aplica o que veio da conta, mantendo gráficos, toque e óculos VR deste aparelho. */
   applySynced(remote) {
     const { v, ...data } = remote || {};
-    const input = { ...data.input };
-    for (const k of DEVICE_INPUT_KEYS) input[k] = this.data.input[k];
-    this.data = deepMerge(structuredClone(DEFAULTS), { ...data, input, graphics: this.data.graphics });
+    for (const [sec, keys] of Object.entries(DEVICE_KEYS)) {
+      data[sec] = { ...data[sec] };
+      for (const k of keys) data[sec][k] = this.data[sec][k];
+    }
+    this.data = deepMerge(structuredClone(DEFAULTS), { ...data, graphics: this.data.graphics });
     this.save();
     this.emitAll();
   }
@@ -443,6 +453,7 @@ export class Settings {
   // ---- presets do jogador
   savePreset(name) {
     const data = Object.fromEntries(PRESET_KEYS.map(k => [k, structuredClone(this.data[k])]));
+    for (const k of DEVICE_KEYS.camera) delete data.camera[k];
     const list = (this.data.presets || []).filter(p => p.name !== name);
     this.data.presets = [{ name, savedAt: Date.now(), data }, ...list].slice(0, 50);
     this.save();
@@ -452,7 +463,9 @@ export class Settings {
   loadPreset(name) {
     const p = (this.data.presets || []).find(x => x.name === name);
     if (!p) return false;
+    const keep = Object.fromEntries(DEVICE_KEYS.camera.map(k => [k, this.data.camera[k]]));
     for (const k of PRESET_KEYS) if (p.data[k]) this.data[k] = deepMerge(structuredClone(DEFAULTS[k]), p.data[k]);
+    Object.assign(this.data.camera, keep);
     this.save();
     this.emitAll();
     return true;

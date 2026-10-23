@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>DiveProp — teste do OSD</title></head>
+<body style="background:#000">
+<div id="eyes" style="position:fixed;inset:0;display:flex;gap:0"></div>
+<div id="osd" class="osd-root"></div>
+<script type="module">
+// Página só para conferir o OSD (normal e nos óculos VR, ?vr=1) sem WebGL.
+import '../src/style.css';
+import { Settings } from '../src/settings.js';
+import { OSD } from '../src/osd.js';
+const q = new URLSearchParams(location.search), vr = q.get('vr') === '1';
+const settings = new Settings();
+const scale = settings.get('camera.vrScale'), shift = settings.get('camera.vrShift');
+// imagem de fundo: no VR, um retângulo por olho do tamanho da imagem do jogo
+const eyes = document.getElementById('eyes');
+for (let i = 0; i < (vr ? 2 : 1); i++) {
+  const e = document.createElement('div');
+  e.style.cssText = `flex:1;display:grid;place-items:center`;
+  e.innerHTML = `<div style="width:${scale * 100}%;height:${scale * 100}%;transform:translateX(${(i ? -1 : 1) * shift * 100}%);background:linear-gradient(#7fb2e6,#cfe3f2 50%,#5d7f3a 50%,#3f5a22);border-radius:8%"></div>`;
+  eyes.appendChild(e);
+}
+const osd = new OSD(document.getElementById('osd'), settings);
+osd.setVR(vr, scale, shift);
+const drone = { armed: true, crashed: false, flightTime: 83, voltage: 24.1, mAhUsed: 312, current: 21, p: { cells: 6 } };
+setInterval(() => osd.draw({ drone, sticks: { throttle: 0.4, yaw: 0, pitch: 0.2, roll: -0.1 }, fps: 60, renderScale: 0.85, turtle: false, lap: 'VOLTA 1  0:21.40  · PORTÃO 3/10', signal: 0.9, throttle: 0.4, speed: 18, alt: 12.3 }), 100);
+osd.flash('ARMADO', 30, '#7dff7a');
+</script></body></html>

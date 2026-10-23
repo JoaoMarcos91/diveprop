@@ -138,7 +138,7 @@ export class Input {
     // Teclado (reserva / testes)
     if (this.keys.size) this.lastSource = 'keyboard';
     for (const code of this.keyEdges) {
-      const map = { Space: 'arm', KeyR: 'reset', KeyC: 'camera', KeyM: 'mode', Escape: 'pause', KeyP: 'pause', BracketRight: 'tiltUp', BracketLeft: 'tiltDown', Comma: 'fovDown', Period: 'fovUp' };
+      const map = { Space: 'arm', KeyR: 'reset', KeyC: 'camera', KeyM: 'mode', Escape: 'pause', KeyP: 'pause', BracketRight: 'tiltUp', BracketLeft: 'tiltDown', Comma: 'fovDown', Period: 'fovUp', KeyV: 'vr' };
       if (map[code]) { this.pressed.add(map[code]); this.keyActions.add(map[code]); }
     }
     this.keyEdges = [];

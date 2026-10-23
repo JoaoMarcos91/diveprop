@@ -83,6 +83,7 @@ export class UI {
         <div class="menu-list">
           <button data-act="resume" class="primary">${te('Continuar')}</button>
           <button data-act="respawn">${te('Resetar drone')}</button>
+          <button data-act="vr" data-vr-btn></button>
           <button data-act="settings">${te('Configurações')}</button>
           <button data-act="fly">${te('Trocar cenário')}</button>
           <button data-act="help">${te('Controles')}</button>
@@ -119,6 +120,7 @@ export class UI {
             <li>${t('<b>A / D</b> yaw · <b>setas</b> pitch / roll')}</li>
             <li>${t('<b>Espaço</b> armar · <b>R</b> reset · <b>C</b> câmera')}</li>
             <li>${t('<b>M</b> modo · <b>T</b> turtle · <b>Esc</b> pausa')}</li>
+            <li>${t('<b>V</b> óculos VR (tela dividida)')}</li>
             <li>${t('<b>[ ]</b> ângulo da câmera · <b>, .</b> FOV')}</li>
           </ul>
           <h3>${te('Celular e tablet (toque)')}</h3><ul>
@@ -126,6 +128,7 @@ export class UI {
             <li>${t('<b>Stick direito</b> ↕ pitch · ↔ roll')}</li>
             <li>${t('<b>ARMAR</b> com o throttle embaixo · <b>MODO</b> Acro/Angle/Horizon · <b>CÂM</b> câmera · <b>RESET</b>')}</li>
             <li>${te('Jogue com o celular deitado. No Android, "Adicionar à tela inicial" abre em tela cheia')}</li>
+            <li>${t('<b>Óculos VR</b>: no menu de pausa, ligue "Óculos VR", conecte o controle por Bluetooth e coloque o celular na VR box. Ajuste tamanho e distância das imagens em Configurações → Câmera')}</li>
           </ul><p class="hint">${t('Dica: comece em <b>Angle</b> (L1, M ou MODO) se nunca voou FPV. Em <b>Acro</b> o drone não se nivela sozinho — é assim que drones reais de freestyle voam.')}</p></div>
         </div>
         <div class="bar"><button data-act="back" class="primary">${te('Voltar')}</button></div>
@@ -151,6 +154,7 @@ export class UI {
       case 'help': this.show('help'); break;
       case 'share': this.share(); break;
       case 'account': this.show('account'); break;
+      case 'vr': g.toggleVR(); this.updateVRButton(); break;
       case 'lang': this.settings.set('game.lang', getLang() === 'en' ? 'pt' : 'en'); break;
       case 'back': this.back(); break;
       case 'resume': g.resume(); break;
@@ -174,6 +178,7 @@ export class UI {
     if (name === 'account') this.renderAccount();
     this.updatePadStatus();
     this.updateAccountButton();
+    this.updateVRButton();
     requestAnimationFrame(() => {
       const first = this.root.querySelector(`#scr-${name} .primary, #scr-${name} button`);
       first?.focus({ preventScroll: true });
@@ -239,6 +244,11 @@ export class UI {
           ? `<span class="dot ok"></span>${te('Controles na tela (toque) · também dá para conectar um controle Bluetooth')}`
           : `<span class="dot"></span>${te('Nenhum controle — conecte um controle ou rádio FPV e aperte um botão (ou use o teclado)')}`;
     }
+  }
+
+  updateVRButton() {
+    const btn = this.root.querySelector('[data-vr-btn]');
+    if (btn) btn.textContent = this.settings.get('camera.vr') ? t('Óculos VR (tela dividida): ligado') : t('Óculos VR (tela dividida): desligado');
   }
 
   // ------------------------------------------------------------------ conta

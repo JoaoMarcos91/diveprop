@@ -120,7 +120,7 @@ export class TouchControls {
   /** Chamado a cada frame: mostra só voando, sem controle de videogame ligado. */
   update() {
     const g = this.game;
-    const show = this.enabled() && g.state === 'flying' && (this.forced || !g.input.gamepad);
+    const show = this.enabled() && g.state === 'flying' && !g.vrActive && (this.forced || !g.input.gamepad);
     if (show !== this.visible) {
       this.visible = show;
       this.root.classList.toggle('on', show);

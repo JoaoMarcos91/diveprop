@@ -14,11 +14,16 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif; -webkit-user-select: none; user-select: none; }
 #game { position: fixed; inset: 0; width: 100vw; height: 100vh; display: block; }
-#osd { position: fixed; inset: 0; pointer-events: none; z-index: 5; font: bold clamp(13px, 2.5vh, 26px)/1.25 Menlo, "Courier New", monospace; color: #fff;
+.osd-root { position: fixed; inset: 0; pointer-events: none; z-index: 5; font: bold clamp(13px, 2.5vh, 26px)/1.25 Menlo, "Courier New", monospace; color: #fff;
   text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000; }
-#osd > div:not(.osd-fps) { visibility: hidden; }
-#osd.on > div { visibility: visible; }
-#osd span, #osd b { display: block; white-space: pre; }
+.osd-root > div:not(.osd-fps) { visibility: hidden; }
+.osd-root.on > div { visibility: visible; }
+.osd-root span, .osd-root b { display: block; white-space: pre; }
+.osd-root[hidden] { display: none; }
+/* óculos VR: um OSD em cada metade da tela */
+body.vr-on .osd-root { right: auto; width: 50vw; transform-origin: center center; }
+body.vr-on #osd-r { left: 50vw; }
+body.vr-on .osd-root { font-size: clamp(10px, 2.6vh, 22px); } /* meia tela: letras menores para caber */
 .osd-tl, .osd-tc, .osd-tr, .osd-bl, .osd-bc, .osd-br, .osd-fps { position: absolute; }
 .osd-tl { left: 3vh; top: 2.5vh; } .osd-tr { right: 3vh; top: 2.5vh; text-align: right; }
 .osd-tc { left: 0; right: 0; top: 2.5vh; text-align: center; } .osd-tc .lap { color: #ffe27a; margin-top: 0.4vh; }

@@ -12,7 +12,8 @@ rádio FPV de verdade ou com os sticks na tela do celular. 100% gratuito, sem in
 > physics, 9 maps (abandoned factory and power plant with hollow chimneys and a ladder-dive
 > stairwell, mountains, race track, beach, quarry, indoor gym…) and every parameter tunable.
 > Play with a gamepad (PS3/PS4/PS5, Xbox, Switch), a real FPV radio over USB (EdgeTX/OpenTX
-> joystick mode) or the on-screen sticks on your phone. The game is in English whenever your
+> joystick mode), the on-screen sticks on your phone, or put the phone in a VR box (split-screen
+> mode) with a Bluetooth controller. The game is in English whenever your
 > browser isn't set to Portuguese (or switch it on the main menu / Settings → Audio / Game).
 > Mode 2 controls: left stick throttle/yaw, right stick pitch/roll · **R1/RB** arm ·
 > **△/Y** reset · **□/X** camera · **L1/LB** flight mode (start in Angle) · hold **✕/A** for
@@ -32,6 +33,12 @@ rádio FPV de verdade ou com os sticks na tela do celular. 100% gratuito, sem in
 throttle (fica onde você soltar) e yaw, o direito é pitch e roll; toque em **ARMAR** com o
 throttle embaixo. O celular já começa no modo Angle e no gráfico Baixo. No Android,
 "Adicionar à tela inicial" abre o jogo em tela cheia. Um controle Bluetooth também funciona.
+
+**Óculos VR (VR box):** no menu de pausa, ligue **Óculos VR** — a tela se divide em duas imagens
+iguais (como nos óculos FPV de verdade, que têm uma câmera só), os controles de toque somem e a
+tela não apaga. Conecte um controle por Bluetooth (PS4, PS5, Xbox…), coloque o celular na VR
+box e voe. Tamanho, distância entre as imagens e correção da lente ficam em
+Configurações → Câmera.
 
 Nunca voou FPV? Aperte **L1** para trocar para o modo **Angle**, que nivela o drone sozinho.
 No modo **Acro** (padrão) o drone fica no ângulo em que você deixar, como os drones reais

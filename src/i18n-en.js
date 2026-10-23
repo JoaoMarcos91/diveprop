@@ -490,4 +490,21 @@ export default {
   'O Google não deixa entrar por dentro de apps (Instagram, Facebook…). Abra o link no navegador.': 'Google doesn’t allow signing in inside apps (Instagram, Facebook…). Open the link in your browser.',
   'Este navegador bloqueia o login com Google (cookies ou armazenamento desligados).': 'This browser blocks Google sign-in (cookies or storage turned off).',
   'Não deu para carregar o login do Google. Recarregue a página e tente de novo.': 'Couldn’t load Google sign-in. Reload the page and try again.',
+  'Óculos VR ligado': 'VR headset on',
+  'Óculos VR desligado': 'VR headset off',
+  'Conecte um controle por Bluetooth (PS4, PS5, Xbox…) para jogar com os óculos VR.': 'Connect a Bluetooth controller (PS4, PS5, Xbox…) to play with the VR headset.',
+  'Óculos VR (tela dividida): ligado': 'VR headset (split screen): on',
+  'Óculos VR (tela dividida): desligado': 'VR headset (split screen): off',
+  '<b>V</b> óculos VR (tela dividida)': '<b>V</b> VR headset (split screen)',
+  '<b>Óculos VR</b>: no menu de pausa, ligue "Óculos VR", conecte o controle por Bluetooth e coloque o celular na VR box. Ajuste tamanho e distância das imagens em Configurações → Câmera':
+    '<b>VR headset</b>: in the pause menu turn on "VR headset", connect the controller over Bluetooth and put the phone in the VR box. Adjust image size and spacing in Settings → Camera',
+  'Óculos VR (celular numa VR box)': 'VR headset (phone in a VR box)',
+  'Tela dividida para óculos VR': 'Split screen for VR headset',
+  'Divide a tela em duas imagens iguais (como nos óculos FPV de verdade) para usar o celular numa VR box, jogando com um controle Bluetooth. Também liga no menu de pausa ou com a tecla V.':
+    'Splits the screen into two identical images (like real FPV goggles) to use the phone in a VR box, playing with a Bluetooth controller. Also toggled from the pause menu or the V key.',
+  'Tamanho da imagem': 'Image size',
+  'Distância entre as imagens': 'Distance between images',
+  'Aproxima (+) ou afasta (−) as duas imagens para ficarem no centro de cada lente.': 'Moves the two images closer (+) or apart (−) so each one sits in the center of its lens.',
+  'Correção da lente': 'Lens correction',
+  'Compensa a distorção das lentes da VR box (linhas retas devem parecer retas).': 'Compensates the VR box lens distortion (straight lines should look straight).',
 };

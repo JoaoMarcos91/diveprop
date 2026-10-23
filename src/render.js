@@ -1,5 +1,5 @@
 // Renderizador WebGL2 + passe de pós-processamento FPV (fisheye, vídeo analógico/digital)
-// + resolução dinâmica.
+// + resolução dinâmica + tela dividida para óculos VR (celular numa VR box).
 import * as THREE from 'three';
 
 const FX_VERT = /* glsl */`
@@ -10,6 +10,7 @@ const FX_FRAG = /* glsl */`
 uniform sampler2D tDiffuse;
 uniform vec2 res;
 uniform float aspect, fisheye, time, signal, strength, mode, vignette;
+uniform float vrScale, vrShift, vrK;
 varying vec2 vUv;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(12.9898, 78.233))) * 43758.5453); }
 vec3 tm(vec3 c) {
@@ -20,7 +21,14 @@ vec3 tm(vec3 c) {
 }
 vec3 sampleScene(vec2 uv) { return tm(texture2D(tDiffuse, uv).rgb); }
 void main() {
-  vec2 d = (vUv - 0.5) * vec2(aspect, 1.0);
+  // óculos VR: cada olho recebe a imagem encolhida, deslocada para o centro da lente e com
+  // distorção de barril (a lente da VR box aplica a inversa). Fora do VR: 1, 0, 0 = sem efeito.
+  vec2 q = (vUv - 0.5 - vec2(vrShift, 0.0)) / vrScale;
+  vec2 qa = q * vec2(aspect, 1.0);
+  q *= 1.0 + vrK * dot(qa, qa) * 2.0;
+  vec2 p = q + 0.5;
+  bool outside = p.x < 0.0 || p.x > 1.0 || p.y < 0.0 || p.y > 1.0;
+  vec2 d = (p - 0.5) * vec2(aspect, 1.0);
   float rmax = length(vec2(aspect, 1.0) * 0.5);
   float r = length(d) / rmax;
   float a = 1.0 - fisheye;
@@ -56,7 +64,7 @@ void main() {
     if (bad > 0.92) col *= 0.2;
   }
   // borda preta fora da imagem (fisheye forte)
-  if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) col = vec3(0.0);
+  if (outside || uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) col = vec3(0.0);
   col *= 1.0 - vignette * smoothstep(0.55, 1.15, r);
   gl_FragColor = linearToOutputTexel(vec4(col, 1.0));
 }`;
@@ -83,6 +91,7 @@ export class Renderer {
       uniforms: {
         tDiffuse: { value: null }, res: { value: new THREE.Vector2(1, 1) }, aspect: { value: 1 }, fisheye: { value: 0 },
         time: { value: 0 }, signal: { value: 1 }, strength: { value: 0.5 }, mode: { value: 1 }, vignette: { value: 0.35 },
+        vrScale: { value: 1 }, vrShift: { value: 0 }, vrK: { value: 0 },
       },
       vertexShader: FX_VERT, fragmentShader: FX_FRAG, depthTest: false, depthWrite: false,
     });
@@ -92,6 +101,7 @@ export class Renderer {
     this.fxScene.add(quad);
     this.fxCam = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     this.rt = null;
+    this.vr = false;
     this.resize();
     addEventListener('resize', () => this.resize());
   }
@@ -102,16 +112,30 @@ export class Renderer {
     const w = innerWidth, h = innerHeight;
     this.renderer.setPixelRatio(Math.min(this.scale * (devicePixelRatio || 1), 2));
     this.renderer.setSize(w, h, true);
-    const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+    const size = this.rtSize();
     if (this.rt) this.rt.setSize(size.x, size.y);
     this.fxMat.uniforms.res.value.copy(size);
-    this.fxMat.uniforms.aspect.value = w / h;
-    this.aspect = w / h;
+    // no VR a câmera tem o formato de um olho (meia tela) e a cena é desenhada uma vez só,
+    // com metade dos pixels: os dois olhos mostram a mesma imagem, como nos óculos FPV
+    this.aspect = (this.vr ? w / 2 : w) / h;
+    this.fxMat.uniforms.aspect.value = this.aspect;
+  }
+
+  rtSize() {
+    const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+    if (this.vr) size.x = Math.max(1, Math.round(size.x / 2));
+    return size;
+  }
+
+  setVR(on) {
+    if (on === this.vr) return;
+    this.vr = on;
+    this.resize();
   }
 
   ensureRT() {
     if (this.rt) return this.rt;
-    const size = this.renderer.getDrawingBufferSize(new THREE.Vector2());
+    const size = this.rtSize();
     this.rt = new THREE.WebGLRenderTarget(size.x, size.y, {
       type: this.halfFloat ? THREE.HalfFloatType : THREE.UnsignedByteType,
       samples: this.settings.get('graphics.msaa') ? 4 : 0,
@@ -127,7 +151,7 @@ export class Renderer {
     this.resize();
   }
 
-  /** fx: { active, fisheye, mode(0 off,1 analog,2 digital), signal, strength, time } */
+  /** fx: { active, fisheye, mode(0 off,1 analog,2 digital), signal, strength, time, vr: { scale, shift, distort } } */
   render(scene, camera, fx) {
     const r = this.renderer;
     if (!fx || !fx.active) {
@@ -147,7 +171,24 @@ export class Renderer {
     u.strength.value = fx.strength;
     u.time.value = fx.time;
     u.vignette.value = fx.vignette ?? (fx.mode === 0 ? 0.15 : 0.4);
-    r.render(this.fxScene, this.fxCam);
+    if (!this.vr) {
+      u.vrScale.value = 1; u.vrShift.value = 0; u.vrK.value = 0;
+      r.render(this.fxScene, this.fxCam);
+      return;
+    }
+    // tela dividida: o mesmo quadro em cada metade, deslocado para o centro de cada lente
+    const v = fx.vr || {}, w = innerWidth, h = innerHeight, half = w / 2;
+    r.setScissorTest(true);
+    for (const eye of [0, 1]) {
+      r.setViewport(eye * half, 0, half, h);
+      r.setScissor(eye * half, 0, half, h);
+      u.vrScale.value = v.scale ?? 0.9;
+      u.vrShift.value = (eye ? -1 : 1) * (v.shift ?? 0);
+      u.vrK.value = v.distort ?? 0.2;
+      r.render(this.fxScene, this.fxCam);
+    }
+    r.setScissorTest(false);
+    r.setViewport(0, 0, w, h);
   }
 
   /** Volta para a resolução configurada e ignora os primeiros segundos (depois de carregar). */
