@@ -68,7 +68,7 @@ export default {
   '<b>[ ]</b> ângulo da câmera · <b>, .</b> FOV': '<b>[ ]</b> camera angle · <b>, .</b> FOV',
   'Celular e tablet (toque)': 'Phone and tablet (touch)',
   '<b>Stick esquerdo</b> ↕ throttle (fica onde você soltar) · ↔ yaw': '<b>Left stick</b> ↕ throttle (stays where you let go) · ↔ yaw',
-  '<b>ARMAR</b> com o throttle embaixo · <b>MODO</b> Acro/Angle/Horizon · <b>CÂM</b> câmera · <b>RESET</b>': '<b>ARM</b> with throttle down · <b>MODE</b> Acro/Angle/Horizon · <b>CAM</b> camera · <b>RESET</b>',
+  '<b>ARMAR</b> com o throttle embaixo · <b>MODO</b> Acro/Angle/Horizon · <b>CÂM</b> câmera · <b>RESET</b> · <b>☰ Menu</b> pausa': '<b>ARM</b> with throttle down · <b>MODE</b> Acro/Angle/Horizon · <b>CAM</b> camera · <b>RESET</b> · <b>☰ Menu</b> pause',
   'Jogue com o celular deitado. No Android, "Adicionar à tela inicial" abre em tela cheia': 'Hold the phone sideways. On Android, "Add to Home screen" opens it fullscreen',
   'Dica: comece em <b>Angle</b> (L1, M ou MODO) se nunca voou FPV. Em <b>Acro</b> o drone não se nivela sozinho — é assim que drones reais de freestyle voam.':
     'Tip: start in <b>Angle</b> (L1, M or MODE) if you have never flown FPV. In <b>Acro</b> the drone does not level itself — that is how real freestyle drones fly.',
@@ -110,7 +110,6 @@ export default {
   'DESARMAR': 'DISARM',
   'MODO': 'MODE',
   'CÂM': 'CAM',
-  'Pausa': 'Pause',
   'Gire o celular para jogar na horizontal': 'Turn your phone sideways to play',
 
   // ---------------------------------------------------------------- corrida
@@ -507,4 +506,5 @@ export default {
   'Aproxima (+) ou afasta (−) as duas imagens para ficarem no centro de cada lente.': 'Moves the two images closer (+) or apart (−) so each one sits in the center of its lens.',
   'Correção da lente': 'Lens correction',
   'Compensa a distorção das lentes da VR box (linhas retas devem parecer retas).': 'Compensates the VR box lens distortion (straight lines should look straight).',
+  'Ajuda': 'Help',
 };

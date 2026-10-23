@@ -54,7 +54,9 @@ export class Input {
   }
 
   listGamepads() {
-    return navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+    // alguns sistemas (Linux/Android) listam os sensores de movimento e o touchpad do
+    // DualShock/DualSense como "controles" separados: não são controles de verdade
+    return navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && !/motion sensors|touchpad/i.test(g.id)) : [];
   }
 
   /** Controle escolhido nas configurações, senão o último que teve atividade. */
@@ -68,11 +70,15 @@ export class Input {
 
   /** Marca como ativo o controle que acabou de se mexer (só no poll, uma vez por frame). */
   trackActivity() {
-    for (const gp of this.listGamepads()) {
+    const pads = this.listGamepads();
+    // eixo mexendo só troca de controle se for um controle padrão (ou não houver nenhum):
+    // um acessório com eixos "nervosos" não rouba o controle ativo; botão sempre vale
+    const hasStandard = pads.some(g => g.mapping === 'standard');
+    for (const gp of pads) {
       const prev = this.prevAxes.get(gp.id);
       const moved = prev && gp.axes.some((a, i) => Math.abs(a - (prev[i] ?? a)) > 0.25);
       this.prevAxes.set(gp.id, [...gp.axes]);
-      if (moved || gp.buttons.some(b => b.pressed)) this.activeId = gp.id;
+      if ((moved && (!hasStandard || gp.mapping === 'standard')) || gp.buttons.some(b => b.pressed)) this.activeId = gp.id;
     }
   }
 

@@ -114,7 +114,12 @@ section { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
 .ctl select { flex: 1; font: inherit; color: var(--text); background: #1a1f26; border: 1px solid var(--line); border-radius: 8px; padding: 7px 8px; }
 .ctl input[type=checkbox] { width: 20px; height: 20px; accent-color: var(--accent); }
 .val { min-width: 92px; text-align: right; font-variant-numeric: tabular-nums; color: var(--accent); font-size: 13px; }
-.help-i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: rgba(255,255,255,0.12); color: var(--muted); font-size: 11px; font-style: normal; cursor: help; margin-left: 4px; }
+button.help-i { display: inline-grid; place-items: center; width: 18px; height: 18px; padding: 0; margin-left: 4px; vertical-align: middle; border: 0; border-radius: 50%;
+  background: rgba(255,255,255,0.12); color: var(--muted); font: 700 11px/1 -apple-system, system-ui, sans-serif; cursor: pointer; }
+button.help-i[aria-expanded=true] { background: var(--accent); color: var(--accent-ink); }
+@media (pointer: coarse) { button.help-i { width: 26px; height: 26px; font-size: 13px; } }
+.row .help-text { grid-column: 1 / -1; margin: -2px 0 4px; padding: 8px 10px; border-radius: 8px; background: rgba(255,255,255,0.05); color: var(--muted); font-size: 13px; line-height: 1.45; }
+.row .help-text[hidden] { display: none; }
 .reload-tag { color: var(--accent); font-style: normal; font-size: 12px; margin-left: 4px; }
 .inv { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .meter { position: relative; flex: 1; min-width: 70px; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
@@ -166,7 +171,6 @@ section { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
 #touch button.down { background: rgba(255,204,51,0.55); color: #1a1400; }
 #touch .t-arm { border-color: #ffd24a; color: #ffd24a; }
 #touch .t-arm.armed { border-color: #7dff7a; color: #7dff7a; }
-#touch .t-pause { position: absolute; top: calc(env(safe-area-inset-top) + 2vmin); left: 50%; transform: translateX(-50%); min-width: 0; pointer-events: auto; }
 #touch .t-rotate { display: none; position: fixed; inset: 0; z-index: 60; background: rgba(8,10,14,0.94); color: #fff; pointer-events: auto;
   flex-direction: column; align-items: center; justify-content: center; text-align: center; font: 600 18px/1.4 -apple-system, system-ui, sans-serif; }
 #touch .t-rotate b { font-size: 64px; color: var(--accent); }
@@ -206,3 +210,11 @@ html, body { touch-action: manipulation; overscroll-behavior: none; }
 .or::before, .or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
 button.google { display: flex; align-items: center; justify-content: center; gap: 10px; background: #fff; color: #1f1f1f; border-color: #dadce0; font-weight: 600; }
 button.google:hover { background: #f2f2f2; }
+
+/* botão de menu do celular: sempre visível voando (toque, controle Bluetooth ou óculos VR) */
+#menu-btn { position: fixed; top: calc(env(safe-area-inset-top) + 8px); left: 50%; transform: translateX(-50%); z-index: 15;
+  display: flex; align-items: center; gap: 6px; padding: 7px 14px; font: 700 14px/1 -apple-system, system-ui, sans-serif; color: #fff;
+  background: rgba(0,0,0,0.45); border: 1.5px solid rgba(255,255,255,0.5); border-radius: 10px; touch-action: none; -webkit-tap-highlight-color: transparent; }
+#menu-btn b { font-size: 16px; }
+#menu-btn[hidden] { display: none; }
+body.menu-btn-on:not(.vr-on) .osd-tc { top: calc(2.5vh + 40px); } /* o cronômetro desce para não ficar embaixo do botão */

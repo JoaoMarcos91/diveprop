@@ -28,6 +28,7 @@ for (const tab of S.SCHEMA) {
 }
 const lit = (file, re) => { for (const m of readFileSync(file, 'utf8').matchAll(re)) add(unq(m[1])); };
 lit('src/scenes/index.js', /(?:name|desc|tag): '((?:[^'\\]|\\.)*)'/g);
+lit('src/ui.js', /const SPEED_HELP = '((?:[^'\\]|\\.)*)'/g);
 const block = (file, start) => { const src = readFileSync(file, 'utf8'); const i = src.indexOf(start); return src.slice(i, src.indexOf('};', i)); };
 for (const [file, start] of [['src/ui.js', 'const ACTION_NAMES'], ['src/ui.js', 'const HAPTICS_LABEL'], ['src/main.js', 'const CAM_LABEL'], ['src/controllers.js', 'const SONY_MODELS'], ['src/cloud.js', 'const map = {']]) {
   for (const m of block(file, start).matchAll(/: '((?:[^'\\]|\\.)*)'/g)) add(unq(m[1]));

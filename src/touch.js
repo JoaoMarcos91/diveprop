@@ -36,10 +36,21 @@ export class TouchControls {
       <div class="t-zone r"><div class="t-base"><div class="t-knob"></div></div><span class="t-label">pitch · roll</span></div>
       <div class="t-btns l"><button data-a="arm" class="t-arm"></button><button data-a="mode"></button></div>
       <div class="t-btns r"><button data-a="camera"></button><button data-a="reset"></button></div>
-      <button class="t-pause" data-a="pause">❚❚</button>
       <div class="t-rotate"><b>↻</b><p></p></div>`;
     document.body.appendChild(root);
     this.armBtn = root.querySelector('.t-arm');
+    // botão de menu: fica visível em todo voo no celular, mesmo com controle Bluetooth ou óculos VR
+    const mb = this.menuBtn = document.createElement('button');
+    mb.id = 'menu-btn';
+    mb.hidden = true;
+    mb.innerHTML = '<b>☰</b> Menu';
+    mb.setAttribute('aria-label', 'Menu');
+    mb.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      this.game.audio.ensure();
+      if (this.game.state === 'flying') this.game.pause();
+    });
+    document.body.appendChild(mb);
     this.relang();
 
     const [left, right] = root.querySelectorAll('.t-zone');
@@ -75,7 +86,6 @@ export class TouchControls {
     q('[data-a=mode]').textContent = t('MODO');
     q('[data-a=camera]').textContent = t('CÂM');
     q('[data-a=reset]').textContent = 'RESET';
-    q('.t-pause').setAttribute('aria-label', t('Pausa'));
     q('.t-rotate p').textContent = t('Gire o celular para jogar na horizontal');
     this.last.armed = undefined; // o update() reescreve ARMAR/DESARMAR
     this.armBtn.textContent = t('ARMAR');
@@ -120,6 +130,11 @@ export class TouchControls {
   /** Chamado a cada frame: mostra só voando, sem controle de videogame ligado. */
   update() {
     const g = this.game;
+    const menu = g.state === 'flying' && (this.forced || isTouchDevice() || g.settings.get('input.touch') === 'on');
+    if (menu === this.menuBtn.hidden) {
+      this.menuBtn.hidden = !menu;
+      document.body.classList.toggle('menu-btn-on', menu);
+    }
     const show = this.enabled() && g.state === 'flying' && !g.vrActive && (this.forced || !g.input.gamepad);
     if (show !== this.visible) {
       this.visible = show;

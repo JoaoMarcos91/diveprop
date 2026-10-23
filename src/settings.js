@@ -82,7 +82,7 @@ export const CONTROL_LAYOUTS = {
 export const PRESET_KEYS = ['drone', 'battery', 'rates', 'fc', 'camera'];
 // Ficam só neste aparelho (não vão para a conta nem para os presets): gráficos, controles de
 // toque e óculos VR
-const DEVICE_KEYS = { input: ['touch', 'touchSize', 'gamepadIndex'], camera: ['vr', 'vrScale', 'vrShift', 'vrDistort'] };
+const DEVICE_KEYS = { input: ['touch', 'touchSize', 'gamepadIndex', 'pendingEdit'], camera: ['vr', 'vrScale', 'vrShift', 'vrDistort'] };
 
 // O que fica salvo por controle (cada controle/rádio lembra o próprio mapeamento)
 export const PROFILE_KEYS = ['layout', 'throttle', 'yaw', 'pitch', 'roll', 'throttleMode', 'deadband', 'throttleDeadband', 'calib', 'buttons', 'armSwitch'];

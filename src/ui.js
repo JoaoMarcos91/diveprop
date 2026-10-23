@@ -13,6 +13,8 @@ const ACTION_NAMES = {
 };
 const CHANNEL_NAMES = { throttle: 'Throttle', yaw: 'Yaw', pitch: 'Pitch', roll: 'Roll' };
 
+const SPEED_HELP = 'Escolha a velocidade final e o jogo ajusta o passo da hélice (e, acima de certo ponto, o arrasto) para o drone chegar perto disso voando nivelado com throttle cheio e bateria cheia. Mergulhando ele passa disso; com a bateria acabando, fica abaixo.';
+
 const HAPTICS_LABEL = {
   'trigger-rumble': 'vibração completa (motores + gatilhos)',
   'dual-rumble': 'vibração (dois motores)',
@@ -21,6 +23,10 @@ const HAPTICS_LABEL = {
 
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const te = (s, v) => esc(t(s, v));
+// "?" de ajuda: no computador mostra a dica ao parar o mouse; no toque (ou clique) abre o texto
+// embaixo da opção — ver o clique em .help-i no construtor
+const helpIcon = text => `<button type="button" class="help-i" title="${te(text)}" aria-label="${te('Ajuda')}" aria-expanded="false">?</button>`;
+const helpText = text => `<p class="help-text" hidden>${te(text)}</p>`;
 
 export class UI {
   constructor(game) {
@@ -37,6 +43,13 @@ export class UI {
     this.live = [];       // funções atualizadas a cada frame
     this.build();
     this.root.addEventListener('click', e => {
+      const help = e.target.closest('.help-i');
+      if (help) {
+        e.preventDefault(); // dentro de <label>: não repassa o clique
+        const text = help.closest('.row')?.querySelector('.help-text');
+        if (text) { text.hidden = !text.hidden; help.setAttribute('aria-expanded', String(!text.hidden)); }
+        return;
+      }
       const el = e.target.closest('[data-act],[data-scene],[data-tab]');
       if (!el) return;
       this.game.audio.ensure();
@@ -126,7 +139,7 @@ export class UI {
           <h3>${te('Celular e tablet (toque)')}</h3><ul>
             <li>${t('<b>Stick esquerdo</b> ↕ throttle (fica onde você soltar) · ↔ yaw')}</li>
             <li>${t('<b>Stick direito</b> ↕ pitch · ↔ roll')}</li>
-            <li>${t('<b>ARMAR</b> com o throttle embaixo · <b>MODO</b> Acro/Angle/Horizon · <b>CÂM</b> câmera · <b>RESET</b>')}</li>
+            <li>${t('<b>ARMAR</b> com o throttle embaixo · <b>MODO</b> Acro/Angle/Horizon · <b>CÂM</b> câmera · <b>RESET</b> · <b>☰ Menu</b> pausa')}</li>
             <li>${te('Jogue com o celular deitado. No Android, "Adicionar à tela inicial" abre em tela cheia')}</li>
             <li>${t('<b>Óculos VR</b>: no menu de pausa, ligue "Óculos VR", conecte o controle por Bluetooth e coloque o celular na VR box. Ajuste tamanho e distância das imagens em Configurações → Câmera')}</li>
           </ul><p class="hint">${t('Dica: comece em <b>Angle</b> (L1, M ou MODO) se nunca voou FPV. Em <b>Acro</b> o drone não se nivela sozinho — é assim que drones reais de freestyle voam.')}</p></div>
@@ -380,13 +393,13 @@ export class UI {
     const row = document.createElement('div');
     row.className = 'row';
     const v = this.settings.get(f.path);
-    const help = f.help ? `<i class="help-i" title="${te(f.help)}">?</i>` : '';
+    const help = f.help ? helpIcon(f.help) : '';
     const reload = f.reload ? '<em class="reload-tag">↻</em>' : '';
     let control = '';
     if (f.type === 'range') control = `<input type="range" min="${f.min}" max="${f.max}" step="${f.step}" value="${v}">`;
     else if (f.type === 'select') control = `<select>${Object.entries(f.options).map(([k, l]) => `<option value="${esc(k)}" ${String(v) === String(k) ? 'selected' : ''}>${te(l)}</option>`).join('')}</select>`;
     else if (f.type === 'toggle') control = `<input type="checkbox" ${v ? 'checked' : ''}>`;
-    row.innerHTML = `<label class="lbl">${te(f.label)} ${help}${reload}</label><div class="ctl">${control}<span class="val"></span></div>`;
+    row.innerHTML = `<label class="lbl">${te(f.label)} ${help}${reload}</label><div class="ctl">${control}<span class="val"></span></div>${f.help ? helpText(f.help) : ''}`;
     const input = row.querySelector('input,select');
     const val = row.querySelector('.val');
     const fmt = x => {
@@ -500,8 +513,8 @@ export class UI {
   custom_speedControl(sec) {
     const div = document.createElement('div');
     div.innerHTML = `
-      <div class="row"><label class="lbl">${te('Velocidade máxima')} <i class="help-i" title="${te('Escolha a velocidade final e o jogo ajusta o passo da hélice (e, acima de certo ponto, o arrasto) para o drone chegar perto disso voando nivelado com throttle cheio e bateria cheia. Mergulhando ele passa disso; com a bateria acabando, fica abaixo.')}">?</i></label>
-        <div class="ctl"><input type="range" min="20" max="300" step="5"><span class="val"></span></div></div>
+      <div class="row"><label class="lbl">${te('Velocidade máxima')} ${helpIcon(SPEED_HELP)}</label>
+        <div class="ctl"><input type="range" min="20" max="300" step="5"><span class="val"></span></div>${helpText(SPEED_HELP)}</div>
       <p class="hint" data-perf></p>`;
     const input = div.querySelector('input'), val = div.querySelector('.val'), info = div.querySelector('[data-perf]');
     let dragging = false, sig = '';

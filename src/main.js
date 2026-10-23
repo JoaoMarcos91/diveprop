@@ -191,19 +191,27 @@ class Game {
    * vez que aparece, recebe o layout da família: rádio → AETR com chaves; controle → Modo 2.
    */
   onPadChange(gp, info) {
-    const s = this.settings;
-    const prof = s.data.input.profiles?.[gp.id];
+    const s = this.settings, inp = s.data.input;
+    const prof = inp.profiles?.[gp.id];
+    const sameFamily = (info.family === 'radio') === String(inp.layout).startsWith('radio');
     this.loadingProfile = true;
-    if (prof) {
-      Object.assign(s.data.input, structuredClone(prof));
-    } else {
-      // controle novo: começa com os padrões da família dele
-      const cur = s.data.input.layout;
-      const want = info.family === 'radio' ? 'radioAETR' : (cur.startsWith('radio') ? 'mode2' : cur);
+    if (inp.pendingEdit && sameFamily) {
+      // o jogador mexeu em Configurações → Controle sem controle ativo (no celular o navegador
+      // só mostra o controle depois do 1º botão, que costuma ser o R1): vale o que ele
+      // configurou, e isso vira o perfil deste controle
+    } else if (prof) {
+      Object.assign(inp, structuredClone(prof));
+    } else if (!sameFamily) {
+      // controle novo de outra família (rádio ↔ controle de videogame): padrões dela
+      const want = info.family === 'radio' ? 'radioAETR' : 'mode2';
       const L = CONTROL_LAYOUTS[want];
-      for (const ch of ['throttle', 'yaw', 'pitch', 'roll']) s.data.input[ch] = { ...L[ch] };
-      Object.assign(s.data.input, structuredClone(L.extra), { layout: want, calib: {} });
+      for (const ch of ['throttle', 'yaw', 'pitch', 'roll']) inp[ch] = { ...L[ch] };
+      Object.assign(inp, structuredClone(L.extra), { layout: want, calib: {} });
+    } else {
+      // controle novo da mesma família: mantém o mapeamento atual, só zera a calibração
+      inp.calib = {};
     }
+    delete inp.pendingEdit;
     s.save();
     this.loadingProfile = false;
     this.saveProfile();
@@ -298,7 +306,14 @@ class Game {
 
   onSetting(path) {
     if (path === 'game.lang' || path === '*') this.applyLang();
-    if (path.startsWith('input.') && !path.startsWith('input.profiles') || path === 'input') this.saveProfile();
+    if (path.startsWith('input.') && !path.startsWith('input.profiles') || path === 'input') {
+      if (this.input.gamepad) this.saveProfile();
+      else if (!this.loadingProfile && (path === 'input' || PROFILE_KEYS.includes(path.split('.')[1]))) {
+        // sem controle ativo: guarda que o jogador mudou algo, para o perfil não desfazer
+        this.settings.data.input.pendingEdit = Date.now();
+        this.settings.save();
+      }
+    }
     if (!this.drone) return;
     if (path.startsWith('drone') || path.startsWith('world') || path === '*') {
       this.drone.refreshParams();

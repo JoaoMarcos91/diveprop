@@ -189,10 +189,18 @@ class MockBackend {
 export class Cloud {
   constructor(settings) {
     this.settings = settings;
-    const mock = (import.meta.env.DEV || import.meta.env.VITE_DEVBRIDGE) && /[?&]cloud=mock/.test(location.search);
-    this.backend = mock ? new MockBackend() : CONFIG.apiKey && CONFIG.projectId ? new FirebaseBackend(CONFIG) : null;
+    const dev = import.meta.env.DEV || import.meta.env.VITE_DEVBRIDGE;
+    const mode = dev ? location.search.match(/[?&]cloud=(\w+)/)?.[1] : null;
+    // páginas do canal de testes (?dev=1) nunca tocam na conta de verdade: os testes mudam e
+    // restauram configurações, e isso sincronizaria. Só ?cloud=live liga a nuvem real nelas;
+    // ?cloud=mock usa o servidor de mentira, com uma sessão separada da real.
+    const testPage = dev && /[?&]dev=1/.test(location.search);
+    this.store = mode === 'mock' ? STORE + '.mock' : STORE;
+    this.backend = mode === 'mock' ? new MockBackend()
+      : testPage && mode !== 'live' ? null
+        : CONFIG.apiKey && CONFIG.projectId ? new FirebaseBackend(CONFIG) : null;
     this.session = null;
-    try { this.session = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch { /* sem sessão */ }
+    if (this.backend) try { this.session = JSON.parse(localStorage.getItem(this.store) || 'null'); } catch { /* sem sessão */ }
     this.status = this.session ? 'saved' : 'idle'; // idle · syncing · saved · error
     this.error = '';
     this.savedAt = null;
@@ -207,9 +215,9 @@ export class Cloud {
   emit() { for (const fn of this.listeners) fn(this); }
 
   persist() {
-    if (!this.session) { localStorage.removeItem(STORE); return; }
+    if (!this.session) { localStorage.removeItem(this.store); return; }
     const { uid, username, provider, refreshToken, idToken, expiresAt, updateTime, hash: h } = this.session;
-    try { localStorage.setItem(STORE, JSON.stringify({ uid, username, provider, refreshToken, idToken, expiresAt, updateTime, hash: h })); } catch { /* modo privado */ }
+    try { localStorage.setItem(this.store, JSON.stringify({ uid, username, provider, refreshToken, idToken, expiresAt, updateTime, hash: h })); } catch { /* modo privado */ }
   }
 
   /** Sessão com token válido (renova o token de 1 hora quando precisa). */
