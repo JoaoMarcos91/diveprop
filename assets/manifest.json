@@ -1,0 +1,213 @@
+{
+  "textures": {
+    "brick": {
+      "id": "brick_wall_001",
+      "diff": "tex/brick/diff.jpg",
+      "nor": "tex/brick/nor.jpg",
+      "arm": "tex/brick/arm.jpg"
+    },
+    "concrete": {
+      "id": "dirty_concrete",
+      "diff": "tex/concrete/diff.jpg",
+      "nor": "tex/concrete/nor.jpg",
+      "arm": "tex/concrete/arm.jpg"
+    },
+    "concreteForm": {
+      "id": "concrete_layers_02",
+      "diff": "tex/concreteForm/diff.jpg",
+      "nor": "tex/concreteForm/nor.jpg",
+      "arm": "tex/concreteForm/arm.jpg"
+    },
+    "concreteFloor": {
+      "id": "concrete_floor_damaged_01",
+      "diff": "tex/concreteFloor/diff.jpg",
+      "nor": "tex/concreteFloor/nor.jpg",
+      "arm": "tex/concreteFloor/arm.jpg"
+    },
+    "rust": {
+      "id": "rusty_metal_02",
+      "diff": "tex/rust/diff.jpg",
+      "nor": "tex/rust/nor.jpg",
+      "arm": "tex/rust/arm.jpg"
+    },
+    "corrugatedRust": {
+      "id": "rusty_corrugated_iron",
+      "diff": "tex/corrugatedRust/diff.jpg",
+      "nor": "tex/corrugatedRust/nor.jpg",
+      "arm": "tex/corrugatedRust/arm.jpg"
+    },
+    "corrugated": {
+      "id": "corrugated_iron_02",
+      "diff": "tex/corrugated/diff.jpg",
+      "nor": "tex/corrugated/nor.jpg",
+      "arm": "tex/corrugated/arm.jpg"
+    },
+    "shutter": {
+      "id": "painted_metal_shutter",
+      "diff": "tex/shutter/diff.jpg",
+      "nor": "tex/shutter/nor.jpg",
+      "arm": "tex/shutter/arm.jpg"
+    },
+    "grass": {
+      "id": "leafy_grass",
+      "diff": "tex/grass/diff.jpg",
+      "nor": "tex/grass/nor.jpg",
+      "arm": "tex/grass/arm.jpg"
+    },
+    "forestFloor": {
+      "id": "forest_floor",
+      "diff": "tex/forestFloor/diff.jpg",
+      "nor": "tex/forestFloor/nor.jpg",
+      "arm": "tex/forestFloor/arm.jpg"
+    },
+    "dirt": {
+      "id": "park_dirt",
+      "diff": "tex/dirt/diff.jpg",
+      "nor": "tex/dirt/nor.jpg",
+      "arm": "tex/dirt/arm.jpg"
+    },
+    "gravel": {
+      "id": "gravel_road",
+      "diff": "tex/gravel/diff.jpg",
+      "nor": "tex/gravel/nor.jpg",
+      "arm": "tex/gravel/arm.jpg"
+    },
+    "asphalt": {
+      "id": "asphalt_02",
+      "diff": "tex/asphalt/diff.jpg",
+      "nor": "tex/asphalt/nor.jpg",
+      "arm": "tex/asphalt/arm.jpg"
+    },
+    "barkBroad": {
+      "id": "bark_brown_02",
+      "diff": "tex/barkBroad/diff.jpg",
+      "nor": "tex/barkBroad/nor.jpg",
+      "arm": "tex/barkBroad/arm.jpg"
+    },
+    "barkPine": {
+      "id": "pine_bark",
+      "diff": "tex/barkPine/diff.jpg",
+      "nor": "tex/barkPine/nor.jpg",
+      "arm": "tex/barkPine/arm.jpg"
+    },
+    "roofTiles": {
+      "id": "grey_roof_tiles",
+      "diff": "tex/roofTiles/diff.jpg",
+      "nor": "tex/roofTiles/nor.jpg",
+      "arm": "tex/roofTiles/arm.jpg"
+    },
+    "wood": {
+      "id": "rough_wood",
+      "diff": "tex/wood/diff.jpg",
+      "nor": "tex/wood/nor.jpg",
+      "arm": "tex/wood/arm.jpg"
+    },
+    "plaster": {
+      "id": "grey_plaster_02",
+      "diff": "tex/plaster/diff.jpg",
+      "nor": "tex/plaster/nor.jpg",
+      "arm": "tex/plaster/arm.jpg"
+    },
+    "plasterDamaged": {
+      "id": "damaged_plaster",
+      "diff": "tex/plasterDamaged/diff.jpg",
+      "nor": "tex/plasterDamaged/nor.jpg",
+      "arm": "tex/plasterDamaged/arm.jpg"
+    },
+    "sand": {
+      "id": "damp_beach_sand",
+      "diff": "tex/sand/diff.jpg",
+      "nor": "tex/sand/nor.jpg",
+      "arm": "tex/sand/arm.jpg"
+    },
+    "sandCoarse": {
+      "id": "coast_sand_01",
+      "diff": "tex/sandCoarse/diff.jpg",
+      "nor": "tex/sandCoarse/nor.jpg",
+      "arm": "tex/sandCoarse/arm.jpg"
+    },
+    "rock": {
+      "id": "rock_face",
+      "diff": "tex/rock/diff.jpg",
+      "nor": "tex/rock/nor.jpg",
+      "arm": "tex/rock/arm.jpg"
+    },
+    "rockyGround": {
+      "id": "rocky_terrain_02",
+      "diff": "tex/rockyGround/diff.jpg",
+      "nor": "tex/rockyGround/nor.jpg",
+      "arm": "tex/rockyGround/arm.jpg"
+    },
+    "quarry": {
+      "id": "quarry_wall_02",
+      "diff": "tex/quarry/diff.jpg",
+      "nor": "tex/quarry/nor.jpg",
+      "arm": "tex/quarry/arm.jpg"
+    },
+    "boulder": {
+      "id": "rock_boulder_dry",
+      "diff": "tex/boulder/diff.jpg",
+      "nor": "tex/boulder/nor.jpg",
+      "arm": "tex/boulder/arm.jpg"
+    },
+    "mudDry": {
+      "id": "brown_mud_dry",
+      "diff": "tex/mudDry/diff.jpg",
+      "nor": "tex/mudDry/nor.jpg",
+      "arm": "tex/mudDry/arm.jpg"
+    },
+    "parquet": {
+      "id": "rectangular_parquet",
+      "diff": "tex/parquet/diff.jpg",
+      "nor": "tex/parquet/nor.jpg",
+      "arm": "tex/parquet/arm.jpg"
+    },
+    "paintedBrick": {
+      "id": "painted_brick",
+      "diff": "tex/paintedBrick/diff.jpg",
+      "nor": "tex/paintedBrick/nor.jpg",
+      "arm": "tex/paintedBrick/arm.jpg"
+    },
+    "palmBark": {
+      "id": "palm_bark",
+      "diff": "tex/palmBark/diff.jpg",
+      "nor": "tex/palmBark/nor.jpg",
+      "arm": "tex/palmBark/arm.jpg"
+    }
+  },
+  "hdris": {
+    "partlyCloudy": {
+      "id": "kloofendal_48d_partly_cloudy_puresky",
+      "file": "hdri/partlyCloudy.hdr"
+    },
+    "overcast": {
+      "id": "kloofendal_overcast_puresky",
+      "file": "hdri/overcast.hdr"
+    },
+    "sunset": {
+      "id": "belfast_sunset_puresky",
+      "file": "hdri/sunset.hdr"
+    },
+    "cloudy": {
+      "id": "kloofendal_38d_partly_cloudy_puresky",
+      "file": "hdri/cloudy.hdr"
+    },
+    "noon": {
+      "id": "qwantani_noon_puresky",
+      "file": "hdri/noon.hdr"
+    },
+    "ridge": {
+      "id": "rocky_ridge_puresky",
+      "file": "hdri/ridge.hdr"
+    },
+    "quarry": {
+      "id": "drackenstein_quarry_puresky",
+      "file": "hdri/quarry.hdr"
+    },
+    "gym": {
+      "id": "crossfit_gym",
+      "file": "hdri/gym.hdr"
+    }
+  },
+  "license": "CC0 — Poly Haven (polyhaven.com)"
+}
